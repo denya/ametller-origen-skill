@@ -1,0 +1,272 @@
+// Ametller Origen MCP server. Browse/search the catalog and operate the user's
+// real Salesforce Commerce basket (add/change/remove/reorder). No checkout, ever.
+// NEVER write to stdout here — stdout is the JSON-RPC channel.
+import os from "node:os";
+import path from "node:path";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+import {
+  AmetllerClient,
+  AuthError,
+  compactProduct,
+  compactOrder,
+  compactOrderLine,
+  compactCart,
+} from "./ametller/api.mjs";
+import { loadSession } from "./auth/store.mjs";
+import { runLogin } from "./auth/login.mjs";
+// The shopping playbook, bundled into the server as text by esbuild
+// (--loader:.md=text). Single source of truth; served on demand by ametller_get_shopping_guide.
+import SHOPPING_GUIDE from "./shopping-guide.md";
+
+// Persistent, writable session path (survives plugin updates; not the plugin folder).
+const SESSION_PATH =
+  process.env.AMETLLER_SESSION_PATH || path.join(os.homedir(), ".ametller", "session.json");
+
+// Fresh client per call so a new ametller_login / refreshed token is picked up without a restart.
+function getClient() {
+  let session = null;
+  try {
+    session = loadSession(SESSION_PATH);
+  } catch {
+    session = null; // not signed in yet → guest reads still work
+  }
+  return new AmetllerClient(session);
+}
+
+const json = (data) => ({ content: [{ type: "text", text: JSON.stringify(data, null, 2) }] });
+const fail = (text) => ({ content: [{ type: "text", text }], isError: true });
+
+// Wrap handlers so auth/transport errors become readable tool results, not crashes.
+function tool(handler) {
+  return async (args) => {
+    try {
+      return await handler(args, getClient());
+    } catch (e) {
+      if (e instanceof AuthError) return fail(e.message);
+      if (e?.code === "ENOENT") return fail("Not signed in yet. Run the `ametller_login` tool first.");
+      return fail(`Error: ${e.message}`);
+    }
+  };
+}
+
+const INSTRUCTIONS = `Before showing products or building a cart, call ametller_get_shopping_guide once and follow it — \
+it is the full Ametller Origen shopping playbook.
+
+When the user asks about ANY products, ALWAYS present them in an HTML artifact — a photo \
+grid (photo, name, price, linked to "url"). Convert each product's "image" to base64 via a script and embed it \
+as <img src="data:image/jpeg;base64,...">; a remote image URL won't render in the artifact.
+
+You operate the user's REAL Ametller Origen grocery cart so you can fill it together. The user always reviews and \
+pays on the Ametller Origen site/app — you never check out (there is no checkout tool, by design).
+
+How to shop:
+- If a tool says "not signed in" or the session expired, call the ametller_login tool — a browser opens, the user \
+signs in (handling any 2FA), and the session is saved; then retry the action.
+- To add an item you first need its product_id. Call ametller_search_products with a short term \
+(Catalan works best, e.g. "llet", "pa", "ous", "tomàquet"; Spanish/English may also match), pick the best \
+match, then call ametller_add_to_cart with that id. NEVER invent a product_id.
+- Ametller Origen is a fresh-food grocer; many products are its own label. Pick the best match for what the \
+user asks; prefer the own brand when they want the store's own product.
+- To repeat a previous shop, use ametller_reorder_order (defaults to the most recent order) — it adds that \
+order's items to the cart in one step. Use ametller_get_order_items to show what a past order contained without adding \
+anything. (A brand-new account may have no order history yet.)
+- Use ametller_get_cart to review progress and report the running total. Only call ametller_add_to_cart / \
+ametller_set_quantity / ametller_remove_from_cart when the user explicitly asks to change the real cart.
+- ametller_get_purchase_history shows past orders (dates, totals).
+
+Conventions:
+- product_id is a string; quantity is a whole number.
+- Prices are euros. If a delivery minimum applies it is enforced on the site at checkout; if the cart looks \
+small, you can mention it — don't refuse.
+
+When the user lists several items, search + add them one at a time, then summarise the cart with its total. \
+When finished, tell them the cart is ready to review and pay on the Ametller Origen site. \
+To sign in or re-authenticate, call the ametller_login tool — it opens a browser for the user to sign in.`;
+
+const server = new McpServer({ name: "ametller", version: "0.1.0" }, { instructions: INSTRUCTIONS });
+
+// Librarian tool: serves the bundled shopping skill on demand (no auth needed).
+server.registerTool(
+  "ametller_get_shopping_guide",
+  {
+    title: "Shopping guide (read first)",
+    description:
+      "Return the Ametller Origen shopping playbook: how to present products (ALWAYS as a photo-grid artifact), fill and review the real cart, and reorder past shops. Call this once at the start of any Ametller task — before searching or adding to the cart — and follow it.",
+    inputSchema: {},
+  },
+  async () => ({ content: [{ type: "text", text: SHOPPING_GUIDE }] }),
+);
+
+server.registerTool(
+  "ametller_auth_status",
+  {
+    title: "Auth status",
+    description: "Check whether the Ametller Origen session is valid.",
+    inputSchema: {},
+  },
+  tool(async (_args, c) => json(c.authStatus())),
+);
+
+server.registerTool(
+  "ametller_login",
+  {
+    title: "Log in to Ametller Origen",
+    description:
+      "Open a browser window to sign in to Ametller Origen. The user logs in (and handles any 2FA); the session is then saved so all other tools work. Call this when not signed in, or when a tool reports the session expired.",
+    inputSchema: {},
+  },
+  async () => {
+    try {
+      const r = await runLogin(SESSION_PATH);
+      return {
+        content: [
+          { type: "text", text: `Signed in to Ametller Origen — session saved. You can shop now.` },
+        ],
+      };
+    } catch (e) {
+      const msg = /Cannot find (package|module) '?playwright/.test(e.message)
+        ? "the browser component (Playwright) isn't available to this server yet."
+        : e.message;
+      return { content: [{ type: "text", text: `Login failed: ${msg}` }], isError: true };
+    }
+  },
+);
+
+server.registerTool(
+  "ametller_search_products",
+  {
+    title: "Search products",
+    description:
+      "Find a product and its id (needed before ametller_add_to_cart). Use a short term; Catalan works best (e.g. 'llet', 'pa'). Returns matches with ids and prices.",
+    inputSchema: {
+      query: z.string().describe("Search text, e.g. 'llet semidesnatada' or 'olive oil'"),
+      limit: z.number().int().min(1).max(50).optional().describe("Max results (default 24)"),
+    },
+  },
+  tool(async ({ query, limit }) => {
+    const data = await new AmetllerClient().search(query, { limit: limit ?? 24 });
+    return json({ query, total: data.total, results: (data.hits || []).map((h) => compactProduct(h)) });
+  }),
+);
+
+server.registerTool(
+  "ametller_get_product",
+  {
+    title: "Get product",
+    description: "Get details for a single product by id.",
+    inputSchema: { product_id: z.string().describe("Product id, e.g. '1251'") },
+  },
+  tool(async ({ product_id }) => json(compactProduct(await new AmetllerClient().getProduct(product_id)))),
+);
+
+server.registerTool(
+  "ametller_get_cart",
+  {
+    title: "Get cart",
+    description: "Show the current real shopping cart (items, quantities, total).",
+    inputSchema: {},
+  },
+  tool(async (_args, c) => json(compactCart(await c.getCart()))),
+);
+
+server.registerTool(
+  "ametller_get_purchase_history",
+  {
+    title: "Purchase history",
+    description: "List past orders (date, total, status, item count). Page is 1-based.",
+    inputSchema: { page: z.number().int().min(1).optional().describe("Default 1") },
+  },
+  tool(async ({ page }, c) => {
+    const data = await c.getOrders(page ?? 1);
+    return json({ page: page ?? 1, orders: (data.data || []).map(compactOrder) });
+  }),
+);
+
+server.registerTool(
+  "ametller_get_order_items",
+  {
+    title: "Order items",
+    description:
+      "List the products in a past order (without adding anything). Defaults to the most recent order if order_id is omitted.",
+    inputSchema: {
+      order_id: z
+        .union([z.string(), z.number()])
+        .optional()
+        .describe("Order id from ametller_get_purchase_history; default = latest order"),
+    },
+  },
+  tool(async ({ order_id }, c) => {
+    const id = order_id ?? (await c.getLatestOrderId());
+    if (!id) return fail("No orders found on this account.");
+    const lines = await c.getOrderLines(id);
+    return json({ order_id: id, count: lines.length, items: lines.map(compactOrderLine) });
+  }),
+);
+
+// ---- write tools: mutate the real cart (reversible; the human still pays) ----
+server.registerTool(
+  "ametller_add_to_cart",
+  {
+    title: "Add to cart",
+    description:
+      "Add a product to the real cart by id (get the id from ametller_search_products first). If already present, increases the quantity. Returns the updated cart with its total.",
+    inputSchema: {
+      product_id: z.string().describe("Product id from ametller_search_products, e.g. '1251'"),
+      quantity: z.number().int().min(1).optional().describe("How many to add (default 1)"),
+    },
+  },
+  tool(async ({ product_id, quantity }, c) => json(compactCart(await c.addToCart(product_id, quantity ?? 1)))),
+);
+
+server.registerTool(
+  "ametller_set_quantity",
+  {
+    title: "Set quantity",
+    description: "Set the exact quantity of a product in the cart. Quantity 0 removes it. Returns the updated cart.",
+    inputSchema: {
+      product_id: z.string().describe("Product id"),
+      quantity: z.number().int().min(0).describe("Exact quantity (0 removes)"),
+    },
+  },
+  tool(async ({ product_id, quantity }, c) => json(compactCart(await c.setQuantity(product_id, quantity)))),
+);
+
+server.registerTool(
+  "ametller_remove_from_cart",
+  {
+    title: "Remove from cart",
+    description: "Remove a product from the cart entirely. Returns the updated cart.",
+    inputSchema: { product_id: z.string().describe("Product id") },
+  },
+  tool(async ({ product_id }, c) => json(compactCart(await c.removeFromCart(product_id)))),
+);
+
+server.registerTool(
+  "ametller_reorder_order",
+  {
+    title: "Buy again (reorder)",
+    description:
+      "Add all items from a past order to the cart in one step (a 'buy again'). Defaults to the most recent order. Returns the updated cart.",
+    inputSchema: {
+      order_id: z
+        .union([z.string(), z.number()])
+        .optional()
+        .describe("Order id from ametller_get_purchase_history; default = latest order"),
+    },
+  },
+  tool(async ({ order_id }, c) => {
+    const id = order_id ?? (await c.getLatestOrderId());
+    if (!id) return fail("No orders found on this account.");
+    const lines = await c.getOrderLines(id);
+    const items = lines.map((l) => ({ product_id: l.productId, quantity: l.quantity }));
+    if (!items.length) return fail("That order has no items to reorder.");
+    const cart = await c.addManyToCart(items);
+    return json({ reordered_from: id, added: items.length, cart: compactCart(cart) });
+  }),
+);
+
+const transport = new StdioServerTransport();
+await server.connect(transport);
+console.error("ametller MCP server ready (read + cart writes; no checkout)");

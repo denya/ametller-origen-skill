@@ -1,0 +1,47 @@
+{
+  "name": "ametller-origen-skill",
+  "version": "0.1.0",
+  "description": "Agent skill, CLI, and MCP server for Ametller Origen catalog, cart, online orders, and Gmail receipts.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Igor Safonov and contributors",
+  "homepage": "https://github.com/denya/ametller-origen-skill",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/denya/ametller-origen-skill.git"
+  },
+  "keywords": [
+    "ametller",
+    "ametller-origen",
+    "grocery",
+    "groceries",
+    "shopping",
+    "supermarket",
+    "cart",
+    "reorder",
+    "catalonia",
+    "spain",
+    "mcp",
+    "claude",
+    "claude-desktop"
+  ],
+  "scripts": {
+    "cli": "node scripts/cli.mjs",
+    "tickets:sync": "python3 scripts/sync_gmail_tickets.py",
+    "test": "node --test test/*.test.mjs && python3 -m unittest discover -s test -p 'test_*.py'",
+    "spike": "node scripts/spike.mjs",
+    "login": "node scripts/login.mjs",
+    "whoami": "node scripts/whoami.mjs",
+    "build": "esbuild src/server.mjs --bundle --platform=node --format=esm --external:playwright-core --loader:.md=text --outfile=dist/server.mjs",
+    "test:mcp": "npm run build && node scripts/test-mcp.mjs",
+    "icon": "python3 scripts/make-icon.py"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "playwright-core": "^1.61.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}

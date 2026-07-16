@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# local Ametller session / secrets — NEVER commit
+.ametller/
+session.json
+storage_state.json
+tickets/
+*.sqlite
+__pycache__/
+*.local
+
+# build output (run `npm run build`)
+dist/
+
+# packaged distributions
+*.mcpb
+*.zip
+pack/
+pack-skill/
+ametller-unpacked/
+
+# misc
+.DS_Store
+*.log

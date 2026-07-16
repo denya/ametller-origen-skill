@@ -1,0 +1,93 @@
+{
+  "manifest_version": "0.3",
+  "name": "ametller-origen",
+  "display_name": "Ametller Origen",
+  "version": "0.1.0",
+  "description": "Shop at Ametller Origen from Claude — search the catalog, fill and review the real cart, reorder past shops, and show products as photo grids. You sign in in a browser and pay on the Ametller Origen site.",
+  "long_description": "Shop your Ametller Origen online groceries by talking to Claude. The extension drives your own authenticated Ametller Origen session: it browses the catalog, reads your purchase history, and adds, changes, or removes items in your real cart so you and Claude can fill it together.\n\n**Key Features:**\n• **Search and browse** the catalog (Catalan works best), with prices in euros.\n• **Fill the real cart** — add items, set quantities, or remove them; every change is reversible.\n• **Reorder a past shop** in one step with \"buy again.\"\n• **Photo grids** — products are shown as an HTML artifact with photo, name, price, and link.\n\n**You stay in control of payment.** There is no checkout or payment tool, by design — Claude fills the cart and you review and pay on the Ametller Origen site, where Strong Customer Authentication happens. Sign in once through a browser window (handling any 2FA); the session is stored locally on your machine and never leaves it.\n\nThis extension targets Claude Desktop. It is an independent project and is not affiliated with, endorsed by, or sponsored by Ametller Origen.",
+  "author": {
+    "name": "Igor Safonov",
+    "url": "https://github.com/igorsafonov-gif"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "keywords": [
+    "ametller",
+    "ametller origen",
+    "grocery",
+    "groceries",
+    "shopping",
+    "supermarket",
+    "cart",
+    "reorder",
+    "catalonia",
+    "spain",
+    "food"
+  ],
+  "tools": [
+    {
+      "name": "ametller_get_shopping_guide",
+      "description": "Return the Ametller Origen shopping playbook (how to present products, fill the cart, reorder). Read first, at the start of any Ametller task."
+    },
+    {
+      "name": "ametller_auth_status",
+      "description": "Check whether the Ametller Origen session is valid."
+    },
+    {
+      "name": "ametller_login",
+      "description": "Open a browser window to sign in to Ametller Origen (handling any 2FA); the session is saved so the other tools work."
+    },
+    {
+      "name": "ametller_search_products",
+      "description": "Find products and their ids; an id is needed before adding to the cart."
+    },
+    {
+      "name": "ametller_get_product",
+      "description": "Get details for a single product by id."
+    },
+    {
+      "name": "ametller_get_cart",
+      "description": "Show the current real cart: items, quantities, and total."
+    },
+    {
+      "name": "ametller_get_purchase_history",
+      "description": "List past orders with date, total, status, and item count."
+    },
+    {
+      "name": "ametller_get_order_items",
+      "description": "List the products in a past order without adding anything (defaults to the latest order)."
+    },
+    {
+      "name": "ametller_add_to_cart",
+      "description": "Add a product to the real cart by id (increments the quantity if it is already present)."
+    },
+    {
+      "name": "ametller_set_quantity",
+      "description": "Set the exact quantity of a product in the cart (0 removes it)."
+    },
+    {
+      "name": "ametller_remove_from_cart",
+      "description": "Remove a product from the cart entirely."
+    },
+    {
+      "name": "ametller_reorder_order",
+      "description": "Add all items from a past order to the cart in one step (a 'buy again'); defaults to the latest order."
+    }
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/server.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/server.mjs"],
+      "env": { "AMETLLER_BROWSER_CHANNEL": "chrome" }
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
