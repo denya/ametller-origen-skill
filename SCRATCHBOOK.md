@@ -4,6 +4,8 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 
 ## Worked
 
+- Public v0.5.3 downloaded without credentials at the documented filename, matched SHA-256 `26bed884781af1d267870ec9104fb128b66b7414c89489b7a7407ab705f1cb31`, and started isolated as the v0.5.3/17-tool MCP.
+- When HTTPS Git repeatedly refused connections, the already-authorized SSH Git path passed dry-run and pushed the same verified commit; the release API used the existing Git credential without exposing it or opening a browser.
 - The final one-command gate passed 31 Node and 3 Python tests, v0.5.3/17-tool MCP and no-browser login smokes, strict plugin/MCPB validation, and an audit with zero known vulnerabilities; both Git-history and worktree secret scans are clean.
 - The deterministic server bundle reproduced the same SHA-256 across rebuilds; the final 10-file MCPB starts isolated with no adjacent dependencies and exposes no checkout/payment tool.
 - A parallel current Codex runtime and global MCP registration load v0.5.3 and all 17 tools from a fresh Codex home; the legacy dirty checkout remains byte-for-byte routed out, not overwritten.
@@ -42,6 +44,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 
 ## Failed or harmful
 
+- Release creation repeated an already-documented mistake by passing a short commit id; GitHub rejected it. Always pass `main` or the full 40-character commit id to `target_commitish`.
 - Final publication preflight again found two independent failures: the GitHub CLI keyring token is invalid, and the Git HTTPS path briefly could not reach port 443. Do not confuse API authentication with Git transport; recheck both immediately before push/release.
 - A first 25-ticket cap looked safe with synthetic receipts but serialized the real richer cache to about 146 KB. Size-check the production-shaped cache; the corrected five-ticket page is about 39 KB and still supports sequential inspection.
 - The local Codex skill still points at a June v0.1.0 Git tree with three modified files and one untracked CLI. Overwriting that directory would destroy recoverable user work; install the current runtime alongside it and change only the routing skill/config.

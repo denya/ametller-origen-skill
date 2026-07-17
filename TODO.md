@@ -7,7 +7,7 @@
 - [x] Replace one-step reorder with read-only preview plus explicit approved-subset apply, fresh catalog validation, verification, and failure restoration.
 - [x] Add focused response-size and reorder preview/apply/restore regressions; pass the full deterministic no-browser gate and sanitized API-only reads with forced refresh persistence.
 - [x] Update the current skill/docs/build, install alongside the untouched legacy tree, and prove an isolated current Codex tool surface/version.
-- [ ] Commit, push, publish the follow-up artifact, and verify public install/checksum plus a clean synced main branch.
+- [x] Commit, push, publish the follow-up artifact, and verify public install/checksum plus a clean synced main branch.
 
 ## Offline-ticket timeout follow-up
 
