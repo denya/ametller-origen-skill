@@ -4,6 +4,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 
 ## Worked
 
+- Public v0.5.2 and its Desktop asset were re-downloaded successfully; the documented SHA-256 matched and the compact summary reduced the live 240-ticket result from roughly 336 KB to 7 KB.
 - The private cache has 240 small ticket files and reads all of them in about 65 ms locally; server-side aggregation is the useful optimization, not parallel file reads.
 - Public worktree started clean; the installed extension was inspected read-only and its local session-persistence improvements already exist in this repo.
 - Current official packaging separates Claude Code plugins from Claude Desktop MCP Bundles.
