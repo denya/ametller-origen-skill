@@ -38,4 +38,4 @@
 - [x] Add a private normalized-ticket ingestion tool for Claude's existing Gmail connection.
 - [x] Make connected Gmail the documented default and retain `gws` as an optional fallback.
 - [x] Run the full checkout-free/package/privacy gate for v0.5.
-- [ ] Publish and verify the v0.5 plugin/MCPB for normal customers.
+- [x] Publish and verify the v0.5 plugin/MCPB for normal customers.

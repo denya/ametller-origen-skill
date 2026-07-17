@@ -29,6 +29,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - Public v0.4 main/tag and the exact MCPB asset were verified independently after upload; the downloaded checksum matched and the unpacked 15-tool/MCP-App server started without adjacent dependencies.
 - Connected Gmail and the Ametller MCP are sibling tools; the MCP cannot call Gmail directly. A connector-first skill plus a normalized ingestion tool is the smallest portable bridge and stores no raw email body.
 - v0.5's 16-tool bundle passed the full one-command gate, deterministic build, clean marketplace install, isolated MCPB start, dependency audit, and secret scan without opening a browser or reading a live mailbox.
+- Public v0.5 main/tag and the customer MCPB were re-downloaded after upload; checksum and isolated connector-ingestion smoke both matched the local release artifact.
 
 ## Failed or harmful
 
