@@ -20,6 +20,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - A full Gmail API sync produced 227 valid private ticket files (3,228 item lines), all `0600` under a `0700` directory. Combined read-only analytics covered 229 purchases across 34 months.
 - A fresh isolated Claude Code marketplace install enabled v0.3.0, and both its installed bundle and the packed MCPB started with 15 tools plus the embedded app resource. These checks did not invoke login or launch a browser.
 - Final v0.3 GitHub authentication, remote read, and Git push dry-run all passed immediately before publication.
+- The public v0.3.0 release asset downloaded with the documented SHA-256 and passed the isolated 15-tool/MCP-App startup smoke; public `main` resolved to the release commit.
 
 ## Failed or harmful
 
@@ -45,6 +46,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - A packaged-login smoke that invokes `ametller_login` is a negative effect: it launches a separate Chrome window and can navigate unexpectedly during tests. Replace it with tool discovery, fresh-state auth-status, adjacent-browser-metadata, and zero-state-write assertions; only genuine user-initiated authorization may open Chrome.
 - The first v0.3 publication preflight authenticated `gh` and read the remote HEAD, then the separate Git push dry-run hit a transient connection refusal. Recheck the actual Git push path immediately before publication; do not infer it from API auth or an earlier remote read.
 - An early suggestion run incorrectly kept the oldest observed receipt price, which allowed two stale-price matches. Track the newest price by purchase date instead. With that fix, all current top-12 suggestions remain unresolved and unselectable rather than silently mapping to a changed or wrong product.
+- GitHub rejected a short commit id as `Release.target_commitish`; use `main` or a full commit id when creating the release.
 
 ## Open observations
 
