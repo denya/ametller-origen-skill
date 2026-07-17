@@ -31,7 +31,7 @@ const transport = new StdioClientTransport({
   },
   stderr: "inherit",
 });
-const client = new Client({ name: "ametller-contract-smoke", version: "0.5.2" });
+const client = new Client({ name: "ametller-contract-smoke", version: "0.5.3" });
 
 async function call(name, args = {}) {
   const response = await client.callTool({ name, arguments: args });
@@ -50,6 +50,7 @@ async function callOk(name, args = {}) {
 
 try {
   await client.connect(transport);
+  assert.deepEqual(client.getServerVersion(), { name: "ametller", version: "0.5.3" });
   const listed = await client.listTools();
   const names = new Set(listed.tools.map((tool) => tool.name));
   for (const required of [
@@ -67,6 +68,7 @@ try {
     "ametller_add_to_cart",
     "ametller_set_quantity",
     "ametller_remove_from_cart",
+    "ametller_preview_reorder",
     "ametller_reorder_order",
   ]) assert.ok(names.has(required), `missing MCP tool: ${required}`);
   assert.equal([...names].some((name) => /checkout|payment|place_order/i.test(name)), false);
@@ -103,6 +105,41 @@ try {
   assert.equal(offlineSummary.category_leaders[0].name, "Synthetic product");
   assert.equal("tickets" in offlineSummary, false);
 
+  const pageFixtures = Array.from({ length: 200 }, (_, index) => ({
+    id: `pagination-${String(index).padStart(3, "0")}`,
+    date: `2026-06-${String((index % 28) + 1).padStart(2, "0")}`,
+    total: 12,
+    items: Array.from({ length: 6 }, (_unused, itemIndex) => ({
+      name: `Synthetic pagination product ${index}-${itemIndex}`,
+      quantity: 1,
+      unit: "ud",
+      unit_price: 2,
+      total: 2,
+    })),
+  }));
+  for (let start = 0; start < pageFixtures.length; start += 50) {
+    const batch = await call("ametller_ingest_offline_tickets", { tickets: pageFixtures.slice(start, start + 50) });
+    assert.equal(JSON.parse(batch.text).written, 50);
+  }
+  const boundedRaw = await call("ametller_get_offline_tickets", { limit: 200 });
+  const firstPage = JSON.parse(boundedRaw.text);
+  assert.equal(firstPage.count, 5);
+  assert.equal(firstPage.total, 201);
+  assert.equal(firstPage.page_limit, 5);
+  assert.equal(firstPage.requested_limit, 200);
+  assert.equal(firstPage.has_more, true);
+  assert.equal(firstPage.next_offset, 5);
+  assert.ok(Buffer.byteLength(boundedRaw.text) < 64 * 1024, "raw ticket page exceeded the 64 KiB bridge budget");
+  const secondPage = JSON.parse((await call("ametller_get_offline_tickets", {
+    limit: 200,
+    offset: firstPage.next_offset,
+    include_items: false,
+  })).text);
+  assert.equal(secondPage.offset, 5);
+  assert.equal(secondPage.count, 5);
+  assert.equal(secondPage.next_offset, 10);
+  assert.equal(secondPage.tickets.some((ticket) => firstPage.tickets.some((first) => first.id === ticket.id)), false);
+
   let liveCatalog = "skipped";
   if (process.env.AMETLLER_LIVE_SMOKE === "1") {
     const search = await callOk("ametller_search_products", { query: "poma", limit: 3 });
@@ -119,7 +156,7 @@ try {
   const insights = await call("ametller_purchase_insights");
   assert.equal(insights.response.isError, true);
   assert.match(insights.text, /sign|login/i);
-  console.log(`mcp_smoke=pass tools=${listed.tools.length} app_resource=pass gmail_ingest=pass live_catalog=${liveCatalog} registered_guard=pass`);
+  console.log(`mcp_smoke=pass version=${client.getServerVersion().version} tools=${listed.tools.length} app_resource=pass gmail_ingest=pass ticket_page_guard=pass live_catalog=${liveCatalog} registered_guard=pass`);
 } finally {
   await client.close().catch(() => {});
   try { fs.rmSync(work, { recursive: true, force: true }); } catch {}

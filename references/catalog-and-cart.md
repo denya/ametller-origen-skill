@@ -33,4 +33,13 @@ npm run cli -- remove 17302
 
 After every mutation, verify the returned line quantity and basket total. Discounts can change the basket total by more than the added line price.
 
+## Repeat a past order safely
+
+1. Call `ametller_preview_reorder` with the past order id (or omit it for the latest order).
+2. Show the current-catalog validated lines and every rejected unavailable, unresolved, promotion/bonus, or incompatible-pack line.
+3. Ask the user which exact validated lines and quantities to add. Do not interpret approval of the old order as approval of a changed preview.
+4. Call `ametller_reorder_order` with that exact subset and `confirm: true`.
+
+The apply step revalidates again, snapshots the existing simple basket, verifies additions, and restores the snapshot if an attempted write fails. It refuses an absent or complex basket that cannot be proven losslessly restorable. Reorder only adds basket lines; it never places an order.
+
 No checkout or payment command exists.

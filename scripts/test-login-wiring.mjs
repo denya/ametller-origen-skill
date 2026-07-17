@@ -29,7 +29,7 @@ const transport = new StdioClientTransport({
   },
   stderr: "inherit",
 });
-const client = new Client({ name: "ametller-login-wiring", version: "0.5.2" });
+const client = new Client({ name: "ametller-login-wiring", version: "0.5.3" });
 
 try {
   await client.connect(transport);

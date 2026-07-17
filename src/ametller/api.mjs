@@ -144,15 +144,6 @@ export class AmetllerClient {
     });
   }
 
-  addManyToCart(items) {
-    return this.#ensureBasketForWrite().then((id) =>
-      this.#call(`/checkout/shopper-baskets/v1/organizations/${ORG}/baskets/${id}/items?${qs({})}`, {
-        method: "POST",
-        body: items.map(({ product_id, quantity }) => ({ productId: String(product_id), quantity })),
-      }),
-    );
-  }
-
   // Find a basket line's itemId for a product (set_quantity / remove need it).
   async #findItem(productId) {
     const cart = await this.getCart();

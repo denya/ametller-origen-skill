@@ -66,6 +66,9 @@ test("private ticket reader filters, compacts, and repairs file mode", async () 
     });
     assert.equal(result.tickets.length, 1);
     assert.equal(result.tickets[0].items[0].name, "Quefir natural 4x125g");
+    assert.equal(result.total, 1);
+    assert.equal(result.offset, 0);
+    assert.equal(result.limit, 100);
     assert.equal(result.invalid_files, 1);
     assert.equal((await fs.stat(directory)).mode & 0o777, 0o700);
     assert.equal((await fs.stat(valid)).mode & 0o777, 0o600);

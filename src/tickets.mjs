@@ -5,6 +5,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
+export const RAW_TICKET_PAGE_LIMIT = 5;
 
 function validDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
@@ -79,10 +80,12 @@ export async function readTickets(ticketDir, {
   from,
   to,
   limit = 100,
+  offset = 0,
   includeItems = true,
 } = {}) {
   if (from && !validDate(from)) throw new Error("from must use YYYY-MM-DD");
   if (to && !validDate(to)) throw new Error("to must use YYYY-MM-DD");
+  if (!Number.isInteger(offset) || offset < 0) throw new Error("offset must be a non-negative integer");
   let names;
   try {
     names = await fs.readdir(ticketDir);
@@ -107,7 +110,14 @@ export async function readTickets(ticketDir, {
     }
   }
   tickets.sort((a, b) => b.date.localeCompare(a.date));
-  return { tickets: tickets.slice(0, Math.max(1, Math.min(500, limit))), invalid_files: invalidFiles };
+  const pageLimit = Math.max(1, Math.min(500, limit));
+  return {
+    tickets: tickets.slice(offset, offset + pageLimit),
+    total: tickets.length,
+    offset,
+    limit: pageLimit,
+    invalid_files: invalidFiles,
+  };
 }
 
 function parseSummary(stdout) {

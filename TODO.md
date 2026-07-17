@@ -1,5 +1,14 @@
 # Release workload
 
+## v0.5.3 Codex install and safe-reorder follow-up
+
+- [x] Inspect the stale local Codex skill/MCP and private state without modifying either; record the dirty v0.1.0 legacy tree and protected state modes.
+- [x] Bound and paginate raw offline-ticket responses while keeping compact summaries and individual receipt inspection.
+- [x] Replace one-step reorder with read-only preview plus explicit approved-subset apply, fresh catalog validation, verification, and failure restoration.
+- [x] Add focused response-size and reorder preview/apply/restore regressions; pass the full deterministic no-browser gate and sanitized API-only reads with forced refresh persistence.
+- [x] Update the current skill/docs/build, install alongside the untouched legacy tree, and prove an isolated current Codex tool surface/version.
+- [ ] Commit, push, publish the follow-up artifact, and verify public install/checksum plus a clean synced main branch.
+
 ## Offline-ticket timeout follow-up
 
 - [x] Correlate the Claude Desktop timeout with local MCP lifecycle logs and benchmark the private ticket cache.

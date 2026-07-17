@@ -25,8 +25,9 @@ it out of the conversation and renders reliably on the first try.
   best, e.g. "llet", "pa", "ous", "tomàquet"; Spanish/English may also match), pick the best match,
   then `add_to_cart`. Ametller Origen is a fresh-food grocer with many own-label products — pick the
   best match for the request, preferring the own brand when the user wants the store's own product.
-- Repeat a past shop: `reorder_order` (defaults to the latest order). `get_order_items` shows what a
-  past order contained without adding anything. A brand-new account may have no order history yet.
+- Repeat a past shop: call `preview_reorder` first. Show every freshly validated and rejected line,
+  ask the user to approve an exact subset, then call `reorder_order` with only that subset. It adds to
+  the basket and never checks out. `get_order_items` is an unvalidated historical view.
 - `get_cart` to review and report the running total. Only call `add_to_cart` / `set_quantity` /
   `remove_from_cart` when the user explicitly asks to change the real cart.
 - Smart suggestions are read-only until the user checks products and presses **Add selected to real basket**. Never preselect or auto-add a suggestion.

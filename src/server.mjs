@@ -23,7 +23,8 @@ import {
 import { loadSession } from "./auth/store.mjs";
 import { runLogin } from "./auth/login.mjs";
 import { buildInsights, enrichSuggestions, offlineEvents, onlineEvents } from "./analytics.mjs";
-import { ingestTickets, readTickets, syncTickets } from "./tickets.mjs";
+import { ingestTickets, RAW_TICKET_PAGE_LIMIT, readTickets, syncTickets } from "./tickets.mjs";
+import { applyApprovedReorder, previewReorder, SafeReorderError } from "./reorder.mjs";
 // The shopping playbook, bundled into the server as text by esbuild
 // (--loader:.md=text). Single source of truth; served on demand by ametller_get_shopping_guide.
 import SHOPPING_GUIDE from "./shopping-guide.md";
@@ -59,6 +60,7 @@ function tool(handler) {
       return await handler(args, getClient());
     } catch (e) {
       if (e instanceof AuthError) return fail(e.message);
+      if (e instanceof SafeReorderError) return fail(e.message);
       if (e?.code === "ENOENT") return fail("Not signed in yet. Run the `ametller_login` tool first.");
       return fail("Ametller request failed. Retry once; if it persists, run the login tool again.");
     }
@@ -83,9 +85,9 @@ signs in (handling any 2FA), and the session is saved; then retry the action.
 match, then call ametller_add_to_cart with that id. NEVER invent a product_id.
 - Ametller Origen is a fresh-food grocer; many products are its own label. Pick the best match for what the \
 user asks; prefer the own brand when they want the store's own product.
-- To repeat a previous shop, use ametller_reorder_order (defaults to the most recent order) — it adds that \
-order's items to the cart in one step. Use ametller_get_order_items to show what a past order contained without adding \
-anything. (A brand-new account may have no order history yet.)
+- To repeat a previous shop, call ametller_preview_reorder first. Show its freshly validated and rejected lines, ask \
+the user which exact validated lines to add, then call ametller_reorder_order with only that explicitly approved subset. \
+Reorder only adds to the basket; it never checks out. Use ametller_get_order_items for an unvalidated historical view.
 - Use ametller_get_cart to review progress and report the running total. Only call ametller_add_to_cart / \
 ametller_set_quantity / ametller_remove_from_cart when the user explicitly asks to change the real cart.
 - ametller_get_purchase_history shows past orders (dates, totals).
@@ -102,7 +104,7 @@ When the user lists several items, search + add them one at a time, then summari
 When finished, tell them the cart is ready to review and pay on the Ametller Origen site. \
 To sign in or re-authenticate, call the ametller_login tool — it opens a browser for the user to sign in.`;
 
-const server = new McpServer({ name: "ametller", version: "0.5.2" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "ametller", version: "0.5.3" }, { instructions: INSTRUCTIONS });
 
 // Librarian tool: serves the bundled shopping skill on demand (no auth needed).
 server.registerTool(
@@ -295,22 +297,26 @@ server.registerTool(
   {
     title: "Get offline shop tickets",
     description:
-      "Read privately cached offline Ametller shop tickets, or set summary=true for compact frequent-product and category-leader analytics without returning raw receipts. Refresh with connected Gmail plus ametller_ingest_offline_tickets, or use the optional gws sync.",
+      "Read privately cached offline Ametller shop tickets in bounded pages of at most 5, or set summary=true for compact frequent-product and category-leader analytics without returning raw receipts. Refresh with connected Gmail plus ametller_ingest_offline_tickets, or use the optional gws sync.",
     inputSchema: {
       from: z.string().optional().describe("Start date YYYY-MM-DD"),
       to: z.string().optional().describe("End date YYYY-MM-DD"),
-      limit: z.number().int().min(1).max(500).optional().describe("Max tickets (raw default 100; summary default 500)"),
+      limit: z.number().int().min(1).max(500).optional().describe("Requested tickets (raw responses are capped at 5 per page; summary default 500)"),
+      offset: z.number().int().min(0).optional().describe("Raw-page offset returned as next_offset by the previous call"),
       include_items: z.boolean().optional().describe("Include item lines (default true)"),
       summary: z.boolean().optional().describe("Return compact offline-only frequency/category analytics instead of raw tickets; scans up to 500 tickets"),
     },
     annotations: { readOnlyHint: true },
   },
-  async ({ from, to, limit, include_items, summary }) => {
+  async ({ from, to, limit, offset, include_items, summary }) => {
     try {
+      const requestedLimit = limit ?? (summary ? 500 : RAW_TICKET_PAGE_LIMIT);
+      const pageLimit = summary ? requestedLimit : Math.min(RAW_TICKET_PAGE_LIMIT, requestedLimit);
       const result = await readTickets(TICKET_DIR, {
         from,
         to,
-        limit: limit ?? (summary ? 500 : 100),
+        limit: pageLimit,
+        offset: summary ? 0 : (offset ?? 0),
         includeItems: summary || include_items !== false,
       });
       if (summary) {
@@ -325,7 +331,18 @@ server.registerTool(
           top_products: insights.top_products,
         });
       }
-      return json({ count: result.tickets.length, ...result });
+      const nextOffset = result.offset + result.tickets.length;
+      return json({
+        count: result.tickets.length,
+        total: result.total,
+        offset: result.offset,
+        page_limit: result.limit,
+        ...(requestedLimit > pageLimit ? { requested_limit: requestedLimit } : {}),
+        has_more: nextOffset < result.total,
+        ...(nextOffset < result.total ? { next_offset: nextOffset } : {}),
+        invalid_files: result.invalid_files,
+        tickets: result.tickets,
+      });
     } catch (error) {
       return fail(/must use YYYY-MM-DD/.test(error?.message) ? error.message : "Offline ticket cache could not be read.");
     }
@@ -450,26 +467,44 @@ server.registerTool(
 );
 
 server.registerTool(
+  "ametller_preview_reorder",
+  {
+    title: "Preview and validate a past order",
+    description:
+      "Read a past order and revalidate each line against the current catalog, availability, pack, and quantity. Reports unresolved, unavailable, and promotion/bonus lines without changing the basket. Show this preview and obtain explicit approval before applying a reorder.",
+    inputSchema: {
+      order_id: z.union([z.string(), z.number()]).optional()
+        .describe("Order id from purchase history; default = latest order"),
+    },
+    annotations: { readOnlyHint: true },
+  },
+  tool(async ({ order_id }, c) => json(await previewReorder(c, order_id))),
+);
+
+server.registerTool(
   "ametller_reorder_order",
   {
-    title: "Buy again (reorder)",
+    title: "Apply approved reorder to basket",
     description:
-      "Add all items from a past order to the cart in one step (a 'buy again'). Defaults to the most recent order. Returns the updated cart.",
+      "After ametller_preview_reorder and explicit user approval, freshly revalidate and add only the exact approved subset to the basket. Never checks out. Snapshots and verifies the existing basket, and restores it on any failed apply.",
     inputSchema: {
-      order_id: z
-        .union([z.string(), z.number()])
-        .optional()
-        .describe("Order id from ametller_get_purchase_history; default = latest order"),
+      order_id: z.union([z.string(), z.number()])
+        .describe("Exact order_id returned by ametller_preview_reorder"),
+      approved_items: z.array(z.object({
+        product_id: z.string().min(1).describe("Exact validated product id from the preview"),
+        quantity: z.number().int().min(1).describe("Exact validated quantity from the preview"),
+      })).min(1).max(50).describe("Only the preview lines the user explicitly approved"),
+      confirm: z.literal(true).describe("Must be true only after the user explicitly approves these exact lines"),
     },
   },
-  tool(async ({ order_id }, c) => {
-    const id = order_id ?? (await c.getLatestOrderId());
-    if (!id) return fail("No orders found on this account.");
-    const lines = await c.getOrderLines(id);
-    const items = lines.map((l) => ({ product_id: l.productId, quantity: l.quantity }));
-    if (!items.length) return fail("That order has no items to reorder.");
-    const cart = await c.addManyToCart(items);
-    return json({ reordered_from: id, added: items.length, cart: compactCart(cart) });
+  tool(async ({ order_id, approved_items }, c) => {
+    const result = await applyApprovedReorder(c, { orderId: order_id, approvedItems: approved_items });
+    return json({
+      reordered_from: result.reordered_from,
+      added_lines: result.added_lines,
+      added_quantity: result.added_quantity,
+      cart: compactCart(result.cart),
+    });
   }),
 );
 

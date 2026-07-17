@@ -17,3 +17,6 @@
 | H13 | Confirmed limitation | Repeat history cannot score genuinely unseen products; novelty must remain an explicitly separate live-catalog exploration lane. |
 | H14 | Proven only as an alternate objective | Protein rotation improves protein-family recall but slightly worsens exact-product Precision/NDCG, so it must never replace the default silently. |
 | H15 | Proven by isolated MCP test | A skill-orchestrated bridge can use Claude's existing Gmail connection and persist only normalized receipt fields; the Ametller MCP does not need Gmail credentials or a second OAuth flow. |
+| H16 | Proven by live-size and MCP tests | A 5-ticket raw page plus explicit offset metadata keeps legitimate receipt inspection while reducing the current 200-ticket misuse from roughly 336 KB to 38,761 bytes. |
+| H17 | Proven by failure injection | Fresh catalog validation plus an exact approved subset replaces the batch reorder endpoint; unavailable, promotional, unresolved, and incompatible lines are reported, and a partial apply restores exactly. |
+| H18 | Proven by isolated Codex discovery | The dirty June v0.1.0 Codex extension remains untouched while a parallel v0.5.3 runtime, current skill, and MCP registration load all 17 tools; private state was reused without migration. |

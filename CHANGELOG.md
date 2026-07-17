@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.3 — 2026-07-17
+
+- Bound raw offline-ticket reads to paginated 5-receipt responses while keeping compact aggregate summaries.
+- Replace one-step batch reorder with read-only current-catalog preview and explicit approved-subset basket apply.
+- Snapshot, verify, and restore the existing basket if an approved reorder apply fails; checkout remains impossible.
+
 ## 0.5.2 — 2026-07-17
 
 - Add compact offline-ticket frequency and category-leader summaries, avoiding large raw-receipt tool results.

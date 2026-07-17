@@ -4,6 +4,13 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 
 ## Worked
 
+- The final one-command gate passed 31 Node and 3 Python tests, v0.5.3/17-tool MCP and no-browser login smokes, strict plugin/MCPB validation, and an audit with zero known vulnerabilities; both Git-history and worktree secret scans are clean.
+- The deterministic server bundle reproduced the same SHA-256 across rebuilds; the final 10-file MCPB starts isolated with no adjacent dependencies and exposes no checkout/payment tool.
+- A parallel current Codex runtime and global MCP registration load v0.5.3 and all 17 tools from a fresh Codex home; the legacy dirty checkout remains byte-for-byte routed out, not overwritten.
+- A forced API-only refresh rotated and persisted the live session, then guest product, cart, full order pagination, and order-detail reads passed with no browser launch.
+- Five real cached receipts serialize to 38,761 bytes and expose `next_offset`; focused MCP tests prove a caller requesting 200 still receives only one bounded page.
+- Reorder preview/apply tests report unavailable, bonus, unresolved, id-mismatch, and pack-incompatible lines; stale approvals write nothing, and an injected second-add failure restores the exact starting basket.
+- The Codex follow-up preflight found the public repo clean at v0.5.2 and private state still protected (`0700` directory, `0600` session and 240 ticket files), so no state migration is needed.
 - Public v0.5.2 and its Desktop asset were re-downloaded successfully; the documented SHA-256 matched and the compact summary reduced the live 240-ticket result from roughly 336 KB to 7 KB.
 - The private cache has 240 small ticket files and reads all of them in about 65 ms locally; server-side aggregation is the useful optimization, not parallel file reads.
 - Public worktree started clean; the installed extension was inspected read-only and its local session-persistence improvements already exist in this repo.
@@ -35,6 +42,10 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 
 ## Failed or harmful
 
+- Final publication preflight again found two independent failures: the GitHub CLI keyring token is invalid, and the Git HTTPS path briefly could not reach port 443. Do not confuse API authentication with Git transport; recheck both immediately before push/release.
+- A first 25-ticket cap looked safe with synthetic receipts but serialized the real richer cache to about 146 KB. Size-check the production-shaped cache; the corrected five-ticket page is about 39 KB and still supports sequential inspection.
+- The local Codex skill still points at a June v0.1.0 Git tree with three modified files and one untracked CLI. Overwriting that directory would destroy recoverable user work; install the current runtime alongside it and change only the routing skill/config.
+- The old Codex skill also recommends an automated `npm run login` path and lists only the legacy 12-tool surface. Current verification must discover the packaged tools without launching or navigating a browser.
 - A Claude Desktop request asked for 200 raw tickets to answer an aggregate category question, creating a roughly 336 KB tool result while extension install/reload events recycled the local bridge. The local reader was not slow; avoid large raw results and never install or reload an extension during an active call.
 - Treating the old root `manifest.json` as a Claude Code plugin manifest would be wrong; it is an MCPB manifest and must remain a separate distribution path.
 - The installed extension has local uncommitted changes. Editing or resetting it would risk the working authenticated environment, so release work stays in this repo.

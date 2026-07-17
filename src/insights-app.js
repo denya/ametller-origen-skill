@@ -6,7 +6,7 @@ import {
 } from "@modelcontextprotocol/ext-apps";
 
 const root = document.getElementById("app");
-const app = new App({ name: "ametller-purchase-insights", version: "0.5.2" });
+const app = new App({ name: "ametller-purchase-insights", version: "0.5.3" });
 const euros = new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" });
 
 function element(tag, attributes = {}, children = []) {

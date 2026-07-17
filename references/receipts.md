@@ -31,6 +31,8 @@ npm run cli -- tickets 50
 
 The optional MCP fallback is `ametller_sync_offline_tickets`; `ametller_get_offline_tickets` reads either cache format. The fallback calls the bundled Python parser and Gmail API through `gws`; it never drives or scrapes Gmail in a browser.
 
+For aggregate questions, use `summary=true`. For legitimate receipt inspection, raw calls return at most 5 tickets and provide `next_offset`; follow pages only as needed. Never request hundreds of raw receipts as one model response.
+
 The default destination is `~/.ametller/tickets`. Override it with `--tickets-dir` or `AMETLLER_TICKET_DIR`.
 
 Useful checks:
