@@ -26,6 +26,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - `npm run verify`, deterministic rebuild, strict plugin validation, MCPB validation/pack, clean marketplace install, and isolated packed start all passed without browser invocation.
 - Saved-session API checks passed for catalog, full order pagination/details, cart read, and combined online/offline suggestions. The authorized add/set/remove cycle restored the exact original cart fingerprint.
 - Existing gitleaks history/worktree scans and dependency audit passed; no new scanner or dependency was needed.
+- Public v0.4 main/tag and the exact MCPB asset were verified independently after upload; the downloaded checksum matched and the unpacked 15-tool/MCP-App server started without adjacent dependencies.
 
 ## Failed or harmful
 

@@ -31,4 +31,4 @@
 - [x] Add regression tests plus research, changelog, human jobs-to-be-done, and reusable harness documentation.
 - [x] Re-run deterministic build, full tests, strict plugin/MCPB validation and isolated starts.
 - [x] Re-run dependency, secret/privacy, API-only authenticated read, browser-boundary, and reversible-cart safety gates.
-- [ ] Commit, push public main, publish the v0.4 MCPB asset/checksum, and verify the public form.
+- [x] Commit, push public main, publish the v0.4 MCPB asset/checksum, and verify the public form.
