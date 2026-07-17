@@ -6,7 +6,7 @@ import {
 } from "@modelcontextprotocol/ext-apps";
 
 const root = document.getElementById("app");
-const app = new App({ name: "ametller-purchase-insights", version: "0.3.0" });
+const app = new App({ name: "ametller-purchase-insights", version: "0.4.0" });
 const euros = new Intl.NumberFormat(undefined, { style: "currency", currency: "EUR" });
 
 function element(tag, attributes = {}, children = []) {
@@ -105,7 +105,7 @@ function suggestionList(suggestions) {
       element("span", {
         className: "muted",
         text: suggestion.selectable
-          ? `Usually every ${suggestion.cadence_days} days · last ${suggestion.last_bought}`
+          ? `${suggestion.purchase_count} purchase day${suggestion.purchase_count === 1 ? "" : "s"} · last ${suggestion.days_since}d ago${suggestion.typical_gap_days ? ` · typical gap ${suggestion.typical_gap_days}d` : ""}`
           : "No safe current catalog match",
       }),
     ]);
@@ -174,6 +174,12 @@ function render(data) {
       ]),
     ]),
   );
+  if (data.prediction?.model) root.append(element("p", {
+    className: "muted",
+    text: data.prediction.model === "multi-scale-recency-30"
+      ? `Repeat suggestions use recency across ${data.prediction.purchase_days} purchase days; catalog discovery handles new products separately.`
+      : `Experimental protein rotation across ${data.prediction.purchase_days} purchase days; exact-product accuracy is slightly lower than repeat mode.`,
+  }));
   if (data.monthly?.length) root.append(bars("Spend by month", data.monthly, "month"));
   if (data.categories?.length) root.append(bars("Spend by category", data.categories.slice(0, 8), "category"));
   if (data.top_products?.length) root.append(topProducts(data.top_products));

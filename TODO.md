@@ -19,5 +19,16 @@
 - [x] Expand the no-browser guard across source, scripts, tests, and package test/E2E entrypoints.
 - [x] Re-run authenticated read-only insights when storefront networking is stable.
 - [x] Prove full Gmail sync, a clean Claude Code marketplace install, and an isolated packed-MCPB start without launching a browser.
-- [ ] Visually confirm the MCP App after the user installs the packed v0.3 MCPB in Claude Desktop.
+- [ ] Visually confirm the MCP App after the user installs the current packed MCPB in Claude Desktop (user-driven follow-up; never automated).
 - [x] Commit and publish the verified combined update.
+
+## v0.4 predictor workload
+
+- [x] Wait for the isolated chronological research pass and record the final selected model.
+- [x] Replace median-cadence ranking with the validated multi-scale recency scorer without copying the Bun/SQLite harness.
+- [x] Clean placeholders/service lines, deduplicate exact purchases, merge same-day prediction baskets, and exclude current cart ids/names.
+- [x] Keep protein rotation explicit and keep unseen-product discovery outside repeat prediction.
+- [x] Add regression tests plus research, changelog, human jobs-to-be-done, and reusable harness documentation.
+- [x] Re-run deterministic build, full tests, strict plugin/MCPB validation and isolated starts.
+- [x] Re-run dependency, secret/privacy, API-only authenticated read, browser-boundary, and reversible-cart safety gates.
+- [ ] Commit, push public main, publish the v0.4 MCPB asset/checksum, and verify the public form.

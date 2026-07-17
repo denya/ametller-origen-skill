@@ -24,6 +24,7 @@ This repository includes a modular Salesforce Commerce API client, MCP server, C
 - API endpoints or online order history: read [references/api.md](references/api.md).
 - Offline tickets, Gmail sync, or purchase comparison: read [references/receipts.md](references/receipts.md).
 - Frequent products, spending charts, grouping, or smart basket suggestions: read [references/analytics.md](references/analytics.md).
+- Requests for something new/local/unfamiliar: use catalog search as a separate discovery lane; do not claim a history-only predictor discovered an unseen product.
 
 ## Commands
 
@@ -43,6 +44,7 @@ npm run cli -- order
 npm run cli -- tickets 50
 npm run cli -- insights 12
 npm run cli -- suggestions 12
+npm run cli -- suggestions 12 protein-rotation
 npm run tickets:sync -- --overwrite
 ```
 

@@ -2,9 +2,9 @@
 
 Open Claude integration for Ametller Origen's live catalog, online orders, real cart, optional offline Gmail tickets, purchase analytics, and smart basket suggestions. It intentionally has no checkout, payment, delivery-slot, or order-placement tool. Chrome is used only to establish authorization; all catalog, order, analytics, and cart operations use APIs and never drive or scrape the shopping website.
 
-Version 0.3 adds an official MCP App for Claude Desktop: spend charts, frequent products, official product images, and a suggestion picker. Products start unselected; the real cart changes only after the user checks items and presses **Add selected to real basket**.
+Version 0.4 replaces the old cadence heuristic with an honestly backtested repeat-purchase model. The Claude Desktop MCP App combines full online history with optional private offline Gmail tickets, shows spending and frequency charts, resolves suggestions against the current catalog, and keeps every product unselected until the user explicitly approves a real-cart change.
 
-## Claude Code
+## Install in Claude Code
 
 Requires current [Claude Code](https://code.claude.com/docs/en/setup), Node.js 20 or newer, and installed Google Chrome.
 
@@ -17,18 +17,18 @@ Start or reload Claude Code, then ask for Ametller Origen or invoke `/ametller-o
 
 Claude Code stores the browser-created session in its persistent private plugin-data directory, not in the versioned plugin cache. Uninstall with `--keep-data` if you want to preserve that authorization.
 
-## Claude Desktop
+## Install in Claude Desktop
 
-Download the v0.3.0 installer:
+Download the v0.4.0 installer:
 
-**[Download Ametller Origen v0.3.0 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.3.0/ametller-origen-0.3.0.mcpb)**
+**[Download Ametller Origen v0.4.0 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.4.0/ametller-origen-0.4.0.mcpb)**
 
-[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.3.0)
+[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.4.0)
 
 1. Download the `.mcpb` file from the link above.
 2. Open Claude Desktop on macOS.
 3. Go to **Settings → Extensions → Advanced settings → Install Extension…**.
-4. Select `ametller-origen-0.3.0.mcpb` and approve the installation.
+4. Select `ametller-origen-0.4.0.mcpb` and approve the installation.
 5. Ask Claude to use Ametller Origen. Chrome opens only when account authorization is needed.
 
 ![Ametller Origen cart review and product card in Claude Desktop](docs/claude-desktop-example.png)
@@ -44,6 +44,21 @@ npm ci
 npm run pack:mcpb
 ```
 
+## What you can ask
+
+Think of the integration as two honest lanes: **repeat prediction** uses only products already present in your history, while **discovery** searches the live catalog for something new. Useful requests include:
+
+- “Browse Ametller for kefir, show official images and links, and compare the exact pack sizes.”
+- “Show my previous online orders and the latest offline shop tickets.”
+- “Prepare a new basket, but let me review every item before anything is added.”
+- “Suggest what I should buy today based on my previous online and offline orders.”
+- “Show me something local or new.”
+- “Find a sausage I have never tried.”
+- “Suggest Spanish fruits I may not know as a Russian newcomer.”
+- “Show my most frequent products and spending by month and category.”
+
+The local/new, untried-sausage, and unfamiliar-fruit examples use live catalog/content exploration; a repeat-purchase model cannot infer a genuinely unseen product from one household's receipts. The optional `protein-rotation` mode is a separate experimental meal-planning objective: it improves protein-family coverage in the research audit but slightly reduces exact-product ranking accuracy.
+
 ## Test the local MCP
 
 Build and verify the new server without touching a real account:
@@ -52,11 +67,10 @@ Build and verify the new server without touching a real account:
 git clone https://github.com/denya/ametller-origen-skill.git
 cd ametller-origen-skill
 npm ci
-npm test
-npm run build
-npm run test:mcp
-npm run test:login-wiring
+npm run verify
 ```
+
+`npm run verify` is the one-command checkout-free gate: unit/contract tests, isolated MCP smoke, no-browser login wiring, strict Claude plugin validation, MCPB validation, and dependency audit. It never invokes login or opens a browser. Secret/history scanning remains a separate release-maintainer gate using the repo's existing gitleaks configuration.
 
 Run it as a local Claude Code plugin:
 
@@ -64,7 +78,7 @@ Run it as a local Claude Code plugin:
 claude --plugin-dir "$(pwd)"
 ```
 
-Then ask: “Use Ametller purchase insights and show my frequent products and smart basket suggestions.” The first account read opens Chrome for sign-in if the saved session is missing or expired.
+Then ask: “Suggest what I should buy today from my full online and offline Ametller history.” The first account read opens Chrome for sign-in if the saved session is missing or expired.
 
 Automated packaging and E2E tests never open or navigate Chrome. `ametller_login` opens the official login only after a real user-initiated authorization request; an already saved session is used directly by API tests.
 
@@ -74,7 +88,7 @@ For Claude Desktop, build the one-click local extension:
 npm run pack:mcpb
 ```
 
-Install `dist/ametller-origen-0.3.0.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and the offline-ticket parser. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
+Install `dist/ametller-origen-0.4.0.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and the offline-ticket parser. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
 
 ## CLI and offline tickets
 
@@ -89,6 +103,7 @@ npm run cli -- cart
 npm run cli -- orders all
 npm run cli -- insights 12
 npm run cli -- suggestions 12
+npm run cli -- suggestions 12 protein-rotation
 ```
 
 Offline store tickets are separate from SCAPI online orders. With the authenticated `gws` Google Workspace CLI on `PATH`:
@@ -100,29 +115,27 @@ npm run cli -- tickets 50
 
 Tickets default to `~/.ametller/tickets` with private directory/file modes. Claude can call `ametller_sync_offline_tickets` and `ametller_get_offline_tickets` directly. The sync requires Python 3 plus an authenticated [`gws`](https://github.com/googleworkspace/cli) on `PATH`; offline tickets are not part of Ametller's commerce API.
 
-## What it can do
+## Capabilities and boundaries
 
 - Search products and return official links, all image variants, prices, units, and safe availability flags.
 - Read complete paginated online order history and individual order lines.
 - Sync and read offline digital tickets from Gmail without browser scraping.
 - Group purchases, show monthly/category spend, and rank frequent products.
-- Resolve due-again suggestions against the current catalog by id or a conservative name+price match.
+- Clean placeholders/service lines, remove exact duplicate receipts, merge same-day receipts for prediction, and rank repeat products with the validated 10/30/120-day recency model.
+- Exclude the current API cart and resolve exact product/pack/price against the live catalog by id or a conservative name+price match.
 - Add, set, remove, or reorder cart items after explicit approval; there is no checkout tool.
 
-Current limitations: offline category grouping is a transparent name-based estimate; receipt discounts are not allocated across categories; uncertain ticket-to-catalog matches are shown but cannot be selected; live batch reorder remains less safely reversible than individual additions. Category browsing, search refinements, dedicated promotions, wishlists, and coupons are good future API candidates. Shipping, delivery, payment, and order placement are intentionally out of scope.
+See [the predictor research](docs/NEXT-BASKET-RESEARCH.md) for the chronological evaluation and [the reusable shop-integration harness](docs/SHOP-INTEGRATION-HARNESS.md) for the release workflow.
+
+Current limitations: offline category grouping is a transparent name-based estimate; receipt discounts are not allocated across categories; uncertain ticket-to-catalog matches are shown but cannot be selected; repeat prediction cannot score unseen products; live batch reorder remains less safely reversible than individual additions. Category browsing, search refinements, dedicated promotions, wishlists, and coupons are good future API candidates. Shipping, delivery, payment, and order placement are intentionally out of scope.
 
 ## Verify a checkout-free build
 
 ```bash
-npm test
-npm run build
-npm run test:mcp
-npm run test:mcp:live
-npm run test:login-wiring
-npm run validate:plugin
-npm run validate:mcpb
-npm audit
+npm run verify
 ```
+
+Release maintainers can separately run `npm run test:mcp:live` and `npm run e2e:readonly` for sanitized direct-API checks. The real-cart E2E additionally requires the explicit `AMETLLER_E2E_MUTATE=1` gate and refuses an originally absent or complex basket.
 
 The committed `dist/server.mjs` is deterministic and lets Claude Code install without relying on `npm install` inside its plugin cache. Normal Chrome login is supported; Playwright's optional WebDriver-BiDi bridge is not bundled. Custom MCPB installation is supported, but this project has not been reviewed for Anthropic's public extension directory.
 

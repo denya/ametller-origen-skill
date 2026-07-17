@@ -6,6 +6,7 @@ import test from "node:test";
 import {
   buildInsights,
   chooseCatalogMatch,
+  enrichSuggestions,
   offlineEvents,
   onlineEvents,
 } from "../src/analytics.mjs";
@@ -142,6 +143,99 @@ test("insights merge online and offline purchases and exclude cart products", ()
   assert.equal(insights.suggestions[0].product_id, undefined);
   assert.equal(insights.suggestions[0].expected_price, 5);
   assert.equal(insights.categories.some((category) => category.heuristic), true);
+  assert.equal(insights.prediction.model, "multi-scale-recency-30");
+  assert.equal(insights.prediction.purchase_days, 4);
+});
+
+test("prediction cleaning removes placeholders and duplicate receipts, then merges same-day baskets", () => {
+  const tickets = [{
+    id: "ticket-a",
+    date: "2026-07-01",
+    total: 6,
+    items: [
+      { name: "Parking", quantity: 1, total: 1 },
+      { name: "Poma Gala", quantity: 1, unit_price: 2, total: 2 },
+    ],
+  }, {
+    id: "ticket-a-copy",
+    date: "2026-07-01",
+    total: 6,
+    items: [
+      { name: "Parking", quantity: 1, total: 1 },
+      { name: "Poma Gala", quantity: 1, unit_price: 2, total: 2 },
+    ],
+  }, {
+    id: "ticket-b",
+    date: "2026-07-01",
+    total: 3,
+    items: [{ name: "Quefir natural 4x125g", quantity: 1, unit_price: 3, total: 3 }],
+  }, {
+    id: "placeholder",
+    date: "2026-07-02",
+    total: 4,
+    items: [{ name: "Various items", quantity: 1, total: 4 }],
+  }];
+  const insights = buildInsights(offlineEvents(tickets), {
+    now: new Date("2026-07-17T00:00:00Z"),
+  });
+
+  assert.equal(insights.prediction.removed_lines, 3);
+  assert.equal(insights.prediction.exact_duplicate_purchases_removed, 1);
+  assert.equal(insights.prediction.purchase_days, 1);
+  assert.equal(insights.summary.purchases, 2);
+  assert.deepEqual(insights.top_products.map((item) => item.name).sort(), [
+    "Poma Gala",
+    "Quefir natural 4x125g",
+  ]);
+});
+
+test("multi-scale recency includes one-time repeats, merges exact online/offline names, and excludes cart names", () => {
+  const orders = [{
+    orderNo: "online-old",
+    creationDate: "2026-01-01T10:00:00Z",
+    orderTotal: 2,
+    productItems: [{ productId: "apple", productName: "Poma Gala", quantity: 1, price: 2 }],
+  }];
+  const tickets = [{
+    id: "offline-recent",
+    date: "2026-07-16",
+    total: 2,
+    items: [{ name: "Poma Gala", quantity: 1, unit_price: 2, total: 2 }],
+  }, {
+    id: "offline-kefir",
+    date: "2026-07-15",
+    total: 3,
+    items: [{ name: "Quefir natural 4x125g", quantity: 1, unit_price: 3, total: 3 }],
+  }];
+  const events = [...onlineEvents(orders), ...offlineEvents(tickets)];
+  const insights = buildInsights(events, { now: new Date("2026-07-17T00:00:00Z") });
+
+  assert.equal(insights.top_products.length, 2);
+  assert.equal(insights.top_products.find((item) => item.name === "Poma Gala").purchase_count, 2);
+  assert.equal(insights.suggestions[0].name, "Poma Gala");
+  assert.equal(insights.suggestions[0].product_id, "apple");
+  assert.equal(insights.suggestions.some((item) => item.name === "Quefir natural 4x125g"), true);
+
+  const excluded = buildInsights(events, {
+    cart: { lines: [{ name: "Poma Gala", quantity: 1 }] },
+    now: new Date("2026-07-17T00:00:00Z"),
+  });
+  assert.equal(excluded.suggestions.some((item) => item.name === "Poma Gala"), false);
+});
+
+test("protein rotation is explicit and never replaces the exact default", () => {
+  const events = offlineEvents([
+    { id: "a", date: "2026-07-01", total: 4, items: [{ name: "Pollastre", quantity: 1, total: 4 }] },
+    { id: "b", date: "2026-07-10", total: 5, items: [{ name: "Salmó", quantity: 1, total: 5 }] },
+  ]);
+  const exact = buildInsights(events, { now: new Date("2026-07-17T00:00:00Z") });
+  const rotation = buildInsights(events, {
+    now: new Date("2026-07-17T00:00:00Z"),
+    suggestionMode: "protein-rotation",
+  });
+  assert.equal(exact.prediction.model, "multi-scale-recency-30");
+  assert.equal(rotation.prediction.model, "experimental-protein-rotation-30");
+  assert.equal(rotation.suggestions.every((item) => item.model === "experimental-protein-rotation-30"), true);
 });
 
 test("offline catalog matching requires both strong name and compatible price", () => {
@@ -160,4 +254,18 @@ test("offline catalog matching requires both strong name and compatible price", 
     { name: "Llet", expected_price: 2 },
     [{ productId: "generic", productName: "Llet sencera 1l", price: 2 }],
   ), null);
+});
+
+test("catalog resolution cannot reintroduce a product already in the API cart", async () => {
+  const client = {
+    async search() {
+      return { hits: [{ productId: "in-cart", productName: "Quefir natural 4x125g", price: 3 }] };
+    },
+  };
+  const suggestions = await enrichSuggestions(client, [{
+    name: "Quefir natural 4x125g",
+    expected_price: 3,
+    quantity: 1,
+  }], { excludeProductIds: ["in-cart"] });
+  assert.deepEqual(suggestions, []);
 });

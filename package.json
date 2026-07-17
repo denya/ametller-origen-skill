@@ -1,7 +1,7 @@
 {
   "name": "ametller-origen-skill",
-  "version": "0.3.0",
-  "description": "Agent skill, CLI, MCP server, and interactive purchase insights for Ametller Origen.",
+  "version": "0.4.0",
+  "description": "Ametller Origen skill, MCP, purchase analytics, and backtested basket suggestions without checkout.",
   "type": "module",
   "license": "MIT",
   "author": "Dany and contributors",
@@ -29,6 +29,7 @@
     "cli": "node scripts/cli.mjs",
     "tickets:sync": "python3 scripts/sync_gmail_tickets.py",
     "test": "node --test test/*.test.mjs && python3 -m unittest discover -s test -p 'test_*.py'",
+    "verify": "npm test && npm run test:mcp && npm run test:login-wiring && npm run validate:plugin && npm run validate:mcpb && npm audit",
     "spike": "node scripts/spike.mjs",
     "login": "node scripts/login.mjs",
     "test:login-wiring": "npm run build && node scripts/test-login-wiring.mjs",
@@ -40,7 +41,7 @@
     "e2e:readonly": "node scripts/e2e-readonly.mjs",
     "validate:plugin": "claude plugin validate . --strict",
     "validate:mcpb": "npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json",
-    "pack:mcpb": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . dist/ametller-origen-0.3.0.mcpb",
+    "pack:mcpb": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . dist/ametller-origen-0.4.0.mcpb",
     "icon": "python3 scripts/make-icon.py"
   },
   "engines": {

@@ -21,6 +21,11 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - A fresh isolated Claude Code marketplace install enabled v0.3.0, and both its installed bundle and the packed MCPB started with 15 tools plus the embedded app resource. These checks did not invoke login or launch a browser.
 - Final v0.3 GitHub authentication, remote read, and Git push dry-run all passed immediately before publication.
 - The public v0.3.0 release asset downloaded with the documented SHA-256 and passed the isolated 15-tool/MCP-App startup smoke; public `main` resolved to the release commit.
+- The completed chronological research retained the 10/30/120-day multi-scale recency model after 299 round-one and 384 round-two configurations; the runtime reuses only the selected scorer and cleaning rules.
+- v0.4 tests reproduce placeholder/service-line removal, duplicate-receipt removal, same-day basket merging, online/offline exact-name joining, and both pre/post-catalog cart exclusion.
+- `npm run verify`, deterministic rebuild, strict plugin validation, MCPB validation/pack, clean marketplace install, and isolated packed start all passed without browser invocation.
+- Saved-session API checks passed for catalog, full order pagination/details, cart read, and combined online/offline suggestions. The authorized add/set/remove cycle restored the exact original cart fingerprint.
+- Existing gitleaks history/worktree scans and dependency audit passed; no new scanner or dependency was needed.
 
 ## Failed or harmful
 
@@ -48,6 +53,10 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - The first v0.3 publication preflight authenticated `gh` and read the remote HEAD, then the separate Git push dry-run hit a transient connection refusal. Recheck the actual Git push path immediately before publication; do not infer it from API auth or an earlier remote read.
 - An early suggestion run incorrectly kept the oldest observed receipt price, which allowed two stale-price matches. Track the newest price by purchase date instead. With that fix, all current top-12 suggestions remain unresolved and unselectable rather than silently mapping to a changed or wrong product.
 - GitHub rejected a short commit id as `Release.target_commitish`; use `main` or a full commit id when creating the release.
+- The intuitive median-cadence ranker lost to multi-scale recency on the untouched chronological holdout. Do not reintroduce cadence without new out-of-sample evidence.
+- Inventory proxies, adaptive decay, family boosts/caps, and feature ensembles did not beat the simpler default robustly. Purchase history does not reveal current pantry stock.
+- An offline suggestion could resolve to an already-carted product only after live catalog lookup. Apply cart-id exclusion again after resolution, not just before ranking.
+- Protein rotation improves family coverage but slightly worsens exact-product metrics. Keep it explicit and never relabel it as the best general predictor.
 
 ## Open observations
 

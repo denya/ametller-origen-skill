@@ -9,7 +9,7 @@
     {
       "name": "ametller-origen",
       "source": "./",
-      "description": "Search Ametller Origen, inspect purchase history, and prepare a real cart without checkout."
+      "description": "Search Ametller Origen, inspect purchase history, and prepare a backtested smart cart without checkout."
     }
   ]
 }

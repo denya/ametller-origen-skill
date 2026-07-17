@@ -90,7 +90,7 @@ anything. (A brand-new account may have no order history yet.)
 ametller_set_quantity / ametller_remove_from_cart when the user explicitly asks to change the real cart.
 - ametller_get_purchase_history shows past orders (dates, totals).
 - ametller_get_offline_tickets reads locally synced Gmail receipts; ametller_sync_offline_tickets refreshes that private cache.
-- ametller_purchase_insights combines online orders and optional offline tickets into frequency, monthly/category spend, official images, and smart suggestions. Its Claude Desktop view can add only products the user checks and explicitly approves.
+- ametller_purchase_insights combines online orders and optional offline tickets into frequency, monthly/category spend, official images, and backtested repeat-purchase suggestions. Its Claude Desktop view can add only products the user checks and explicitly approves. Use catalog search, not purchase prediction, for genuinely new products.
 
 Conventions:
 - product_id is a string; quantity is a whole number.
@@ -101,7 +101,7 @@ When the user lists several items, search + add them one at a time, then summari
 When finished, tell them the cart is ready to review and pay on the Ametller Origen site. \
 To sign in or re-authenticate, call the ametller_login tool — it opens a browser for the user to sign in.`;
 
-const server = new McpServer({ name: "ametller", version: "0.3.0" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "ametller", version: "0.4.0" }, { instructions: INSTRUCTIONS });
 
 // Librarian tool: serves the bundled shopping skill on demand (no auth needed).
 server.registerTool(
@@ -318,15 +318,17 @@ registerAppTool(
   {
     title: "Purchase insights and smart basket",
     description:
-      "Analyze full online order history plus optional cached offline tickets: frequent products, spend by month/category, official product images, and due-again suggestions. In Claude Desktop, renders an interactive view; nothing is added unless the user checks products and presses the real-basket approval button.",
+      "Analyze full online order history plus optional cached offline tickets: frequent products, spend by month/category, official product images, and backtested repeat-purchase suggestions. In Claude Desktop, renders an interactive view; nothing is added unless the user checks products and presses the real-basket approval button.",
     inputSchema: {
       include_offline: z.boolean().optional().describe("Include locally cached offline Gmail tickets (default true)"),
       limit: z.number().int().min(1).max(20).optional().describe("Max products and suggestions (default 12)"),
+      suggestion_mode: z.enum(["repeat", "protein-rotation"]).optional()
+        .describe("repeat is the validated default; protein-rotation is an experimental meal-planning objective"),
     },
     annotations: { readOnlyHint: true },
     _meta: { ui: { resourceUri: INSIGHTS_URI } },
   },
-  tool(async ({ include_offline, limit }, c) => {
+  tool(async ({ include_offline, limit, suggestion_mode }, c) => {
     const orderData = await c.getAllOrders();
     const ticketData = include_offline === false
       ? { tickets: [], invalid_files: 0 }
@@ -335,9 +337,10 @@ registerAppTool(
     const insights = buildInsights([
       ...onlineEvents(orderData.data || []),
       ...offlineEvents(ticketData.tickets),
-    ], { cart, limit: limit ?? 12 });
+    ], { cart, limit: limit ?? 12, suggestionMode: suggestion_mode ?? "repeat" });
     insights.suggestions = await enrichSuggestions(c, insights.suggestions, {
       maxLookups: limit ?? 12,
+      excludeProductIds: (cart?.productItems || []).map((item) => item.productId),
     });
     insights.offline_tickets = {
       included: include_offline !== false,
@@ -349,6 +352,7 @@ registerAppTool(
         type: "text",
         text: JSON.stringify({
           summary: insights.summary,
+          prediction: insights.prediction,
           top_products: insights.top_products,
           suggestions: insights.suggestions,
           notes: insights.notes,

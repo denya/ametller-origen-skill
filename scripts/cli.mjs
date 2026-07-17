@@ -78,6 +78,10 @@ switch (command) {
   case "suggestions": {
     const limit = Number(args[0] || 12);
     if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error("Insight limit must be 1-20");
+    const suggestionMode = args[1] || "repeat";
+    if (!["repeat", "protein-rotation"].includes(suggestionMode)) {
+      throw new Error("Usage: npm run cli -- suggestions [1-20] [repeat|protein-rotation]");
+    }
     const client = registeredClient();
     // Keep registered token refresh/rotation sequential; concurrent first calls
     // could each try to rotate the same refresh token.
@@ -87,8 +91,11 @@ switch (command) {
     const insights = buildInsights([
       ...onlineEvents(orders.data || []),
       ...offlineEvents(tickets.tickets),
-    ], { cart, limit });
-    insights.suggestions = await enrichSuggestions(client, insights.suggestions, { maxLookups: limit });
+    ], { cart, limit, suggestionMode });
+    insights.suggestions = await enrichSuggestions(client, insights.suggestions, {
+      maxLookups: limit,
+      excludeProductIds: (cart?.productItems || []).map((item) => item.productId),
+    });
     result = command === "suggestions" ? insights.suggestions : insights;
     break;
   }
