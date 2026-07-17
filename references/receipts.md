@@ -12,7 +12,10 @@ With an authenticated Google Workspace CLI (`gws`) on `PATH`, sync and parse the
 
 ```bash
 npm run tickets:sync -- --overwrite
+npm run cli -- tickets 50
 ```
+
+The MCP equivalents are `ametller_sync_offline_tickets` and `ametller_get_offline_tickets`. The sync tool calls the same bundled Python parser and Gmail API workflow; it never drives or scrapes Gmail in a browser.
 
 The default destination is `~/.ametller/tickets`. Override it with `--tickets-dir` or `AMETLLER_TICKET_DIR`.
 
@@ -34,7 +37,7 @@ npm run cli -- order             # latest
 npm run cli -- order ORDER_NUMBER
 ```
 
-These are online orders only. No supported Ametller shopper API for offline POS tickets has been identified, so do not merge the two histories or claim that SCAPI is complete.
+These are online orders only. No supported Ametller shopper API for offline POS tickets has been identified. Analytics may combine the two sources only when it keeps their source labels and does not claim that SCAPI itself is complete.
 
 ## Matching a receipt line to the live catalog
 

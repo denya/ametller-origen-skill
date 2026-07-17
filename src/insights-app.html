@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <style>
+    :root { color-scheme: light dark; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: transparent; color: var(--color-text-primary, CanvasText); }
+    body { font-family: var(--font-sans, system-ui, sans-serif); font-size: var(--font-text-sm-size, 14px); line-height: var(--font-text-sm-line-height, 1.45); }
+    main { display: grid; gap: 18px; padding: 4px; }
+    h2, h3, p { margin: 0; }
+    h2 { font-size: var(--font-heading-md-size, 20px); line-height: var(--font-heading-md-line-height, 1.25); }
+    h3 { font-size: var(--font-heading-xs-size, 15px); line-height: var(--font-heading-xs-line-height, 1.3); font-weight: var(--font-weight-medium, 500); }
+    .muted { color: var(--color-text-secondary, GrayText); }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .stat { padding: 12px; background: var(--color-background-secondary, color-mix(in srgb, CanvasText 6%, Canvas)); border-radius: var(--border-radius-md, 8px); }
+    .stat strong { display: block; margin-top: 3px; font-size: var(--font-heading-sm-size, 18px); font-weight: var(--font-weight-medium, 500); }
+    .section { display: grid; gap: 10px; }
+    .bars { display: grid; gap: 8px; }
+    .bar-row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(110px, 2fr) auto; gap: 10px; align-items: center; }
+    .bar-track { height: 9px; border-radius: var(--border-radius-full, 999px); background: var(--color-background-tertiary, color-mix(in srgb, CanvasText 10%, Canvas)); overflow: hidden; }
+    .bar { height: 100%; border-radius: inherit; background: var(--color-text-info, Highlight); }
+    .products { display: grid; gap: 7px; }
+    .product-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: baseline; padding-bottom: 7px; border-bottom: var(--border-width-regular, 1px) solid var(--color-border-secondary, color-mix(in srgb, CanvasText 14%, Canvas)); }
+    .suggestions { display: grid; gap: 10px; }
+    .suggestion { display: grid; grid-template-columns: auto 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+    .suggestion img { width: 52px; height: 52px; object-fit: contain; border-radius: var(--border-radius-sm, 6px); background: var(--color-background-secondary, transparent); }
+    .suggestion input { width: 18px; height: 18px; accent-color: var(--color-text-info, Highlight); }
+    .suggestion-name { display: grid; gap: 2px; min-width: 0; }
+    .suggestion-name strong { overflow-wrap: anywhere; font-weight: var(--font-weight-medium, 500); }
+    button { font: inherit; }
+    .link { padding: 2px 0; border: 0; background: transparent; color: var(--color-text-info, LinkText); cursor: pointer; text-decoration: underline; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .primary { min-height: 38px; padding: 8px 14px; border: var(--border-width-regular, 1px) solid var(--color-border-primary, ButtonBorder); border-radius: var(--border-radius-md, 8px); background: var(--color-background-inverse, ButtonFace); color: var(--color-text-inverse, ButtonText); cursor: pointer; font-weight: var(--font-weight-medium, 500); }
+    .primary:disabled { cursor: not-allowed; opacity: .55; }
+    .status[data-kind="error"] { color: var(--color-text-danger, CanvasText); }
+    .status[data-kind="success"] { color: var(--color-text-success, CanvasText); }
+    .empty { padding: 12px 0; color: var(--color-text-secondary, GrayText); }
+    @media (max-width: 520px) {
+      .stats { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: minmax(80px, 1fr) minmax(80px, 1.4fr) auto; }
+      .suggestion { grid-template-columns: auto 44px minmax(0, 1fr); }
+      .suggestion img { width: 44px; height: 44px; }
+      .suggestion-price { grid-column: 3; }
+    }
+  </style>
+</head>
+<body>
+  <main id="app" aria-live="polite"><p class="empty">Loading purchase insights…</p></main>
+  <!-- APP_SCRIPT -->
+</body>
+</html>

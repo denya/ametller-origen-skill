@@ -10,8 +10,17 @@ import {
   compactProduct,
 } from "../src/ametller/api.mjs";
 import { loadSession } from "../src/auth/store.mjs";
+import { buildInsights, enrichSuggestions, offlineEvents, onlineEvents } from "../src/analytics.mjs";
+import { readTickets } from "../src/tickets.mjs";
+
+process.on("uncaughtException", (error) => {
+  const safe = /^(?:Usage:|Page must|Ticket limit|Insight limit|No online order|Not signed in\.)/.test(error?.message);
+  console.error(safe ? error.message : "Ametller command failed. Retry once; if it persists, run npm run login.");
+  process.exit(1);
+});
 
 const sessionPath = process.env.AMETLLER_SESSION_PATH || path.join(os.homedir(), ".ametller", "session.json");
+const ticketDir = process.env.AMETLLER_TICKET_DIR || path.join(os.homedir(), ".ametller", "tickets");
 const [command, ...args] = process.argv.slice(2);
 
 function registeredClient() {
@@ -58,6 +67,31 @@ switch (command) {
     result = { order_id: id, items: (await client.getOrderLines(id)).map(compactOrderLine) };
     break;
   }
+  case "tickets": {
+    const limit = Number(args[0] || 100);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) throw new Error("Ticket limit must be 1-500");
+    const data = await readTickets(ticketDir, { limit, includeItems: true });
+    result = { count: data.tickets.length, ...data };
+    break;
+  }
+  case "insights":
+  case "suggestions": {
+    const limit = Number(args[0] || 12);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error("Insight limit must be 1-20");
+    const client = registeredClient();
+    // Keep registered token refresh/rotation sequential; concurrent first calls
+    // could each try to rotate the same refresh token.
+    const orders = await client.getAllOrders();
+    const tickets = await readTickets(ticketDir, { limit: 500, includeItems: true });
+    const cart = await client.getCart();
+    const insights = buildInsights([
+      ...onlineEvents(orders.data || []),
+      ...offlineEvents(tickets.tickets),
+    ], { cart, limit });
+    insights.suggestions = await enrichSuggestions(client, insights.suggestions, { maxLookups: limit });
+    result = command === "suggestions" ? insights.suggestions : insights;
+    break;
+  }
   case "add": {
     const [productId, rawQuantity = "1"] = args;
     const quantity = Number(rawQuantity);
@@ -81,7 +115,7 @@ switch (command) {
     result = compactCart(await registeredClient().removeFromCart(args[0]));
     break;
   default:
-    throw new Error("Usage: npm run cli -- <status|search|product|cart|orders|order|add|set|remove>");
+    throw new Error("Usage: npm run cli -- <status|search|product|cart|orders|order|tickets|insights|suggestions|add|set|remove>");
 }
 
 console.log(JSON.stringify(result, null, 2));

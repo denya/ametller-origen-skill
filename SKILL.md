@@ -23,6 +23,7 @@ This repository includes a modular Salesforce Commerce API client, MCP server, C
 - Search, product matching, or basket changes: read [references/catalog-and-cart.md](references/catalog-and-cart.md).
 - API endpoints or online order history: read [references/api.md](references/api.md).
 - Offline tickets, Gmail sync, or purchase comparison: read [references/receipts.md](references/receipts.md).
+- Frequent products, spending charts, grouping, or smart basket suggestions: read [references/analytics.md](references/analytics.md).
 
 ## Commands
 
@@ -39,9 +40,12 @@ npm run cli -- remove 10022
 npm run cli -- orders
 npm run cli -- orders all
 npm run cli -- order
+npm run cli -- tickets 50
+npm run cli -- insights 12
+npm run cli -- suggestions 12
 npm run tickets:sync -- --overwrite
 ```
 
 Guest catalog commands work without login. Basket and order commands require a registered browser session.
 
-When the user asks to see a product, include its official link and image. In artifact sandboxes that block remote images, download the image and embed it as base64.
+When the user asks to see a product, include its official link and image. In artifact sandboxes that block remote images, download the image and embed it as base64. `ametller_purchase_insights` is the exception: it already supplies the official MCP App view in supporting clients.

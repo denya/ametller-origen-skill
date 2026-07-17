@@ -1,12 +1,15 @@
 node_modules/
 .git/
+.gitattributes
 .gitleaksignore
 .claude-plugin/
 .mcp.json
 src/
-scripts/
+scripts/*
+!scripts/sync_gmail_tickets.py
 test/
 references/
+docs/
 TODO.md
 HYPOTHESES.md
 SCRATCHBOOK.md

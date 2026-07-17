@@ -3,8 +3,14 @@
 // NEVER write to stdout here — stdout is the JSON-RPC channel.
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import {
+  registerAppResource,
+  registerAppTool,
+  RESOURCE_MIME_TYPE,
+} from "@modelcontextprotocol/ext-apps/server";
 import { z } from "zod";
 import {
   AmetllerClient,
@@ -16,13 +22,21 @@ import {
 } from "./ametller/api.mjs";
 import { loadSession } from "./auth/store.mjs";
 import { runLogin } from "./auth/login.mjs";
+import { buildInsights, enrichSuggestions, offlineEvents, onlineEvents } from "./analytics.mjs";
+import { readTickets, syncTickets } from "./tickets.mjs";
 // The shopping playbook, bundled into the server as text by esbuild
 // (--loader:.md=text). Single source of truth; served on demand by ametller_get_shopping_guide.
 import SHOPPING_GUIDE from "./shopping-guide.md";
+import INSIGHTS_APP_HTML from "virtual:insights-app";
 
 // Persistent, writable session path (survives plugin updates; not the plugin folder).
 const SESSION_PATH =
   process.env.AMETLLER_SESSION_PATH || path.join(os.homedir(), ".ametller", "session.json");
+const TICKET_DIR =
+  process.env.AMETLLER_TICKET_DIR || path.join(os.homedir(), ".ametller", "tickets");
+const RUNTIME_ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const TICKET_SYNC_SCRIPT = path.join(RUNTIME_ROOT, "scripts", "sync_gmail_tickets.py");
+const INSIGHTS_URI = "ui://ametller/purchase-insights.html";
 
 // Fresh client per call so a new ametller_login / refreshed token is picked up without a restart.
 function getClient() {
@@ -75,6 +89,8 @@ anything. (A brand-new account may have no order history yet.)
 - Use ametller_get_cart to review progress and report the running total. Only call ametller_add_to_cart / \
 ametller_set_quantity / ametller_remove_from_cart when the user explicitly asks to change the real cart.
 - ametller_get_purchase_history shows past orders (dates, totals).
+- ametller_get_offline_tickets reads locally synced Gmail receipts; ametller_sync_offline_tickets refreshes that private cache.
+- ametller_purchase_insights combines online orders and optional offline tickets into frequency, monthly/category spend, official images, and smart suggestions. Its Claude Desktop view can add only products the user checks and explicitly approves.
 
 Conventions:
 - product_id is a string; quantity is a whole number.
@@ -85,7 +101,7 @@ When the user lists several items, search + add them one at a time, then summari
 When finished, tell them the cart is ready to review and pay on the Ametller Origen site. \
 To sign in or re-authenticate, call the ametller_login tool — it opens a browser for the user to sign in.`;
 
-const server = new McpServer({ name: "ametller", version: "0.2.0" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "ametller", version: "0.3.0" }, { instructions: INSTRUCTIONS });
 
 // Librarian tool: serves the bundled shopping skill on demand (no auth needed).
 server.registerTool(
@@ -210,6 +226,136 @@ server.registerTool(
     if (!id) return fail("No orders found on this account.");
     const lines = await c.getOrderLines(id);
     return json({ order_id: id, count: lines.length, items: lines.map(compactOrderLine) });
+  }),
+);
+
+server.registerTool(
+  "ametller_sync_offline_tickets",
+  {
+    title: "Sync offline shop tickets",
+    description:
+      "Refresh the private local offline-ticket cache from Ametller digital receipts in Gmail. Requires Python 3 and an authenticated gws CLI. Does not change Gmail messages or the Ametller account.",
+    inputSchema: {
+      overwrite: z.boolean().optional().describe("Reparse receipts already cached (default false)"),
+      limit: z.number().int().min(1).max(500).optional().describe("Optional maximum Gmail messages to inspect"),
+    },
+    annotations: { destructiveHint: false, idempotentHint: true },
+  },
+  async ({ overwrite, limit }) => {
+    try {
+      return json(await syncTickets({
+        scriptPath: TICKET_SYNC_SCRIPT,
+        ticketDir: TICKET_DIR,
+        overwrite: Boolean(overwrite),
+        limit,
+      }));
+    } catch (error) {
+      return fail(error.message);
+    }
+  },
+);
+
+server.registerTool(
+  "ametller_get_offline_tickets",
+  {
+    title: "Get offline shop tickets",
+    description:
+      "Read privately cached offline Ametller shop tickets, optionally filtered by date. Run ametller_sync_offline_tickets first to refresh Gmail receipts.",
+    inputSchema: {
+      from: z.string().optional().describe("Start date YYYY-MM-DD"),
+      to: z.string().optional().describe("End date YYYY-MM-DD"),
+      limit: z.number().int().min(1).max(500).optional().describe("Max tickets (default 100)"),
+      include_items: z.boolean().optional().describe("Include item lines (default true)"),
+    },
+    annotations: { readOnlyHint: true },
+  },
+  async ({ from, to, limit, include_items }) => {
+    try {
+      const result = await readTickets(TICKET_DIR, {
+        from,
+        to,
+        limit: limit ?? 100,
+        includeItems: include_items !== false,
+      });
+      return json({ count: result.tickets.length, ...result });
+    } catch (error) {
+      return fail(/must use YYYY-MM-DD/.test(error?.message) ? error.message : "Offline ticket cache could not be read.");
+    }
+  },
+);
+
+registerAppResource(
+  server,
+  "Ametller purchase insights",
+  INSIGHTS_URI,
+  {
+    description: "Interactive purchase analytics and explicitly approved smart basket suggestions.",
+    _meta: {
+      ui: {
+        prefersBorder: false,
+        csp: { resourceDomains: ["https://www.ametllerorigen.com"] },
+      },
+    },
+  },
+  async () => ({
+    contents: [{
+      uri: INSIGHTS_URI,
+      mimeType: RESOURCE_MIME_TYPE,
+      text: INSIGHTS_APP_HTML,
+      _meta: {
+        ui: {
+          prefersBorder: false,
+          csp: { resourceDomains: ["https://www.ametllerorigen.com"] },
+        },
+      },
+    }],
+  }),
+);
+
+registerAppTool(
+  server,
+  "ametller_purchase_insights",
+  {
+    title: "Purchase insights and smart basket",
+    description:
+      "Analyze full online order history plus optional cached offline tickets: frequent products, spend by month/category, official product images, and due-again suggestions. In Claude Desktop, renders an interactive view; nothing is added unless the user checks products and presses the real-basket approval button.",
+    inputSchema: {
+      include_offline: z.boolean().optional().describe("Include locally cached offline Gmail tickets (default true)"),
+      limit: z.number().int().min(1).max(20).optional().describe("Max products and suggestions (default 12)"),
+    },
+    annotations: { readOnlyHint: true },
+    _meta: { ui: { resourceUri: INSIGHTS_URI } },
+  },
+  tool(async ({ include_offline, limit }, c) => {
+    const orderData = await c.getAllOrders();
+    const ticketData = include_offline === false
+      ? { tickets: [], invalid_files: 0 }
+      : await readTickets(TICKET_DIR, { limit: 500, includeItems: true });
+    const cart = await c.getCart();
+    const insights = buildInsights([
+      ...onlineEvents(orderData.data || []),
+      ...offlineEvents(ticketData.tickets),
+    ], { cart, limit: limit ?? 12 });
+    insights.suggestions = await enrichSuggestions(c, insights.suggestions, {
+      maxLookups: limit ?? 12,
+    });
+    insights.offline_tickets = {
+      included: include_offline !== false,
+      count: ticketData.tickets.length,
+      invalid_files: ticketData.invalid_files,
+    };
+    return {
+      content: [{
+        type: "text",
+        text: JSON.stringify({
+          summary: insights.summary,
+          top_products: insights.top_products,
+          suggestions: insights.suggestions,
+          notes: insights.notes,
+        }, null, 2),
+      }],
+      structuredContent: insights,
+    };
   }),
 );
 

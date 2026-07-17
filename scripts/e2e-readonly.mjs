@@ -33,7 +33,7 @@ if (process.env.AMETLLER_FORCE_REFRESH === "1") {
 assert.deepEqual(await retry(() => client.authStatus()), { signed_in: true, access_token_valid: true });
 assert.ok(tokenStatus(session.access_token).valid);
 assert.equal(fs.statSync(sessionPath).mode & 0o777, 0o600);
-console.log(`browser_session=pass refresh_rotation=${process.env.AMETLLER_FORCE_REFRESH === "1" ? "pass" : "not_repeated"} private_persistence=pass`);
+console.log(`saved_session=pass refresh_rotation=${process.env.AMETLLER_FORCE_REFRESH === "1" ? "pass" : "not_repeated"} private_persistence=pass browser_launch=none`);
 
 const guest = new AmetllerClient();
 const search = await retry(() => guest.search("poma", { limit: 3 }));

@@ -213,10 +213,21 @@ export class AmetllerClient {
 // ---- compact mappers: keep tool output small + readable for the model ----
 
 export function productImage(p) {
-  // search hit: p.image.disBaseLink ; product detail: imageGroups[].images[].disBaseLink
+  // search hit: p.image.disBaseLink; order line: c_VS_imageURL;
+  // product detail: imageGroups[].images[].disBaseLink.
   if (p?.image?.disBaseLink || p?.image?.link) return p.image.disBaseLink || p.image.link;
+  if (p?.c_VS_imageURL) return p.c_VS_imageURL;
   const group = (p?.imageGroups || []).find((g) => g.viewType === "large") || p?.imageGroups?.[0];
   return group?.images?.[0]?.disBaseLink || group?.images?.[0]?.link;
+}
+
+function productImages(p) {
+  return [...new Set([
+    productImage(p),
+    ...(p?.imageGroups || []).flatMap((group) =>
+      (group.images || []).map((image) => image.disBaseLink || image.link),
+    ),
+  ].filter(Boolean))];
 }
 
 const eur = (n) => (n == null ? undefined : `€${Number(n).toFixed(2)}`);
@@ -224,6 +235,7 @@ const eur = (n) => (n == null ? undefined : `€${Number(n).toFixed(2)}`);
 export function compactProduct(p, extra = {}) {
   if (!p) return null;
   const image = productImage(p);
+  const images = productImages(p);
   const id = p.productId ?? p.id;
   const url = p.slugUrl || (id ? `https://www.ametllerorigen.com/ca/product/${id}.html` : undefined);
   return {
@@ -233,6 +245,19 @@ export function compactProduct(p, extra = {}) {
     ...(eur(p.price) ? { price: eur(p.price) } : {}),
     ...(p.pricePerUnit && p.unitMeasure ? { unit_price: `€${Number(p.pricePerUnit).toFixed(2)}/${p.unitMeasure}` } : {}),
     ...(image ? { image } : {}),
+    ...(images.length > 1 ? { images } : {}),
+    ...(p.inventory || p.orderable != null ? {
+      availability: {
+        orderable: (p.inventory?.orderable ?? p.orderable) !== false,
+        backorderable: Boolean(p.inventory?.backorderable),
+        preorderable: Boolean(p.inventory?.preorderable),
+      },
+    } : {}),
+    ...(p.primaryCategoryId ? { category_id: p.primaryCategoryId } : {}),
+    ...(p.unitMeasure ? { unit: p.unitMeasure } : {}),
+    ...(p.unitQuantity != null ? { unit_quantity: p.unitQuantity } : {}),
+    ...(p.minOrderQuantity != null ? { min_quantity: p.minOrderQuantity } : {}),
+    ...(p.stepQuantity != null ? { step_quantity: p.stepQuantity } : {}),
     ...(url ? { url } : {}),
     ...extra,
   };
@@ -268,12 +293,13 @@ export function compactOrder(o) {
 }
 
 export function compactOrderLine(l) {
-  return {
+  return compactProduct(l, {
     product_id: l.productId,
     name: l.productName,
     quantity: l.quantity,
     ...(eur(l.price) ? { price: eur(l.price) } : {}),
-  };
+    ...(l.c_VS_NameCategoryPrimary ? { category: l.c_VS_NameCategoryPrimary } : {}),
+  });
 }
 
 export async function collectOrderPages(fetchPage, { limit = 50, maxPages = 100 } = {}) {

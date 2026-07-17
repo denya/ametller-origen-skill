@@ -61,6 +61,7 @@ def run_gws(resource: list[str], params: dict[str, Any]) -> dict[str, Any]:
         check=True,
         text=True,
         stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
     )
     return json.loads(proc.stdout)
 
@@ -238,7 +239,23 @@ def main() -> int:
 
     args.tickets_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.chmod(args.tickets_dir, 0o700)
-    message_ids = list_message_ids(args.query)
+    try:
+        message_ids = list_message_ids(args.query)
+    except Exception as error:
+        print(
+            json.dumps(
+                {
+                    "matched_messages": 0,
+                    "written": 0,
+                    "skipped_existing": 0,
+                    "failed": 1,
+                    "failure_types": {type(error).__name__: 1},
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 1
     if args.limit:
         message_ids = message_ids[: args.limit]
 

@@ -30,7 +30,7 @@ const transport = new StdioClientTransport({
   },
   stderr: "inherit",
 });
-const client = new Client({ name: "ametller-contract-smoke", version: "0.2.0" });
+const client = new Client({ name: "ametller-contract-smoke", version: "0.3.0" });
 
 async function call(name, args = {}) {
   const response = await client.callTool({ name, arguments: args });
@@ -59,11 +59,23 @@ try {
     "ametller_get_cart",
     "ametller_get_purchase_history",
     "ametller_get_order_items",
+    "ametller_sync_offline_tickets",
+    "ametller_get_offline_tickets",
+    "ametller_purchase_insights",
     "ametller_add_to_cart",
     "ametller_set_quantity",
     "ametller_remove_from_cart",
     "ametller_reorder_order",
   ]) assert.ok(names.has(required), `missing MCP tool: ${required}`);
+  assert.equal([...names].some((name) => /checkout|payment|place_order/i.test(name)), false);
+
+  const resources = await client.listResources();
+  const insightsResource = resources.resources.find((resource) =>
+    resource.uri === "ui://ametller/purchase-insights.html");
+  assert.ok(insightsResource, "missing MCP App resource");
+  const appResource = await client.readResource({ uri: insightsResource.uri });
+  assert.match(appResource.contents[0].mimeType, /text\/html;profile=mcp-app/);
+  assert.match(appResource.contents[0].text, /Add selected to real basket/);
 
   const auth = await call("ametller_auth_status");
   assert.equal(JSON.parse(auth.text).signed_in, false);
@@ -81,12 +93,11 @@ try {
   const cart = await call("ametller_get_cart");
   assert.equal(cart.response.isError, true);
   assert.match(cart.text, /sign|login/i);
-  console.log(`mcp_smoke=pass tools=${listed.tools.length} live_catalog=${liveCatalog} registered_guard=pass`);
+  const insights = await call("ametller_purchase_insights");
+  assert.equal(insights.response.isError, true);
+  assert.match(insights.text, /sign|login/i);
+  console.log(`mcp_smoke=pass tools=${listed.tools.length} app_resource=pass live_catalog=${liveCatalog} registered_guard=pass`);
 } finally {
   await client.close().catch(() => {});
-  try { fs.unlinkSync(serverPath); } catch {}
-  try { fs.unlinkSync(path.join(work, "package.json")); } catch {}
-  try { fs.unlinkSync(path.join(work, "browsers.json")); } catch {}
-  try { fs.rmdirSync(dist); } catch {}
-  try { fs.rmdirSync(work); } catch {}
+  try { fs.rmSync(work, { recursive: true, force: true }); } catch {}
 }

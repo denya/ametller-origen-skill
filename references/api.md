@@ -21,6 +21,10 @@ Implemented shopper APIs:
 | Online orders | Shopper Customers `customers/{id}/orders` |
 | Online order details | Shopper Orders `orders/{orderNo}` |
 
+Product output also surfaces official image variants, category id, unit/minimum/step quantities, and orderable/backorder/preorder flags already present in storefront responses. Deliberately do not present the deployment's placeholder stock count as real inventory.
+
 `orders` represents e-commerce orders. It does not expose the in-store POS tickets delivered by email. Use the Gmail workflow for offline purchases.
+
+Useful Salesforce shopper capabilities not yet implemented include category/refinement browsing, dedicated search suggestions and promotions, product lists/wishlists, coupons, shipping methods, and delivery-slot/checkout flows. The first four are reasonable future read/preparation features after live storefront validation. Shipping, delivery, payment, and order placement stay outside this checkout-free project.
 
 The public client identifiers in `src/auth/slas.mjs` are storefront configuration, not customer secrets.

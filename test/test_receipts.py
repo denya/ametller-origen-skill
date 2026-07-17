@@ -1,9 +1,13 @@
 import importlib.util
+import io
 import json
 import os
+import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 
 SPEC = importlib.util.spec_from_file_location(
@@ -37,6 +41,18 @@ TOTAL 1,99 €"""
             MODULE.write_private_json(path, {"id": "synthetic"})
             self.assertEqual(json.loads(path.read_text()), {"id": "synthetic"})
             self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
+
+    def test_sync_startup_failure_is_sanitized(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = io.StringIO()
+            with mock.patch.object(MODULE, "list_message_ids", side_effect=RuntimeError("private failure")):
+                with mock.patch.object(sys, "argv", ["sync", "--tickets-dir", directory]):
+                    with redirect_stdout(output):
+                        code = MODULE.main()
+            summary = json.loads(output.getvalue())
+            self.assertEqual(code, 1)
+            self.assertEqual(summary["failed"], 1)
+            self.assertNotIn("private failure", output.getvalue())
 
 
 if __name__ == "__main__":

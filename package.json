@@ -1,7 +1,7 @@
 {
   "name": "ametller-origen-skill",
-  "version": "0.2.0",
-  "description": "Agent skill, CLI, and MCP server for Ametller Origen catalog, cart, online orders, and Gmail receipts.",
+  "version": "0.3.0",
+  "description": "Agent skill, CLI, MCP server, and interactive purchase insights for Ametller Origen.",
   "type": "module",
   "license": "MIT",
   "author": "Dany and contributors",
@@ -31,8 +31,8 @@
     "test": "node --test test/*.test.mjs && python3 -m unittest discover -s test -p 'test_*.py'",
     "spike": "node scripts/spike.mjs",
     "login": "node scripts/login.mjs",
-    "login:bundle": "npm run build && node scripts/login-mcp.mjs",
-    "build": "esbuild src/server.mjs --bundle --platform=node --format=esm --target=node18 --loader:.md=text --banner:js=\"import { createRequire } from 'node:module'; import { fileURLToPath as bundleFileURLToPath } from 'node:url'; import { dirname as bundleDirname } from 'node:path'; const require = createRequire(import.meta.url); const __filename = bundleFileURLToPath(import.meta.url); const __dirname = bundleDirname(__filename);\" --outfile=dist/server.mjs --external:chromium-bidi/lib/cjs/bidiMapper/BidiMapper --external:chromium-bidi/lib/cjs/cdp/CdpConnection",
+    "test:login-wiring": "npm run build && node scripts/test-login-wiring.mjs",
+    "build": "node scripts/build.mjs",
     "start": "node dist/server.mjs",
     "test:mcp": "npm run build && node scripts/test-mcp.mjs",
     "test:mcp:live": "npm run build && AMETLLER_LIVE_SMOKE=1 node scripts/test-mcp.mjs",
@@ -40,10 +40,14 @@
     "e2e:readonly": "node scripts/e2e-readonly.mjs",
     "validate:plugin": "claude plugin validate . --strict",
     "validate:mcpb": "npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json",
-    "pack:mcpb": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . dist/ametller-origen.mcpb",
+    "pack:mcpb": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . dist/ametller-origen-0.3.0.mcpb",
     "icon": "python3 scripts/make-icon.py"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.7.4",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "playwright-core": "^1.61.0",
     "zod": "^4.4.3"

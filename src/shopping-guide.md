@@ -9,6 +9,8 @@ When the user asks about ANY Ametller Origen products (search, browse, compare, 
 a past order), **ALWAYS present them as an HTML artifact** — a photo grid where each card has the
 product photo, name, price, and a link to the product `url`.
 
+For purchase analytics, call `ametller_purchase_insights`. In clients that support MCP Apps it already renders the official interactive charts and suggestion picker, so do not wrap it in a second artifact.
+
 **Photos must be base64-embedded.** Get the products from the ametller tools, then with your code
 tool: download each product's `image` URL, convert it to base64 in a script, and embed it as
 `<img src="data:image/jpeg;base64,...">`. A remote `http(s)` image URL will NOT render inside the
@@ -27,6 +29,7 @@ it out of the conversation and renders reliably on the first try.
   past order contained without adding anything. A brand-new account may have no order history yet.
 - `get_cart` to review and report the running total. Only call `add_to_cart` / `set_quantity` /
   `remove_from_cart` when the user explicitly asks to change the real cart.
+- Smart suggestions are read-only until the user checks products and presses **Add selected to real basket**. Never preselect or auto-add a suggestion.
 - Match name, brand, package size, and price. Never silently replace an unavailable product with a
   same-price product, different pack, or different brand.
 - Prices are euros. If a delivery minimum applies it is enforced on the site at checkout; if the cart
