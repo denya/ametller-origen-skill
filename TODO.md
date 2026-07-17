@@ -16,6 +16,7 @@
 - [x] Embed an explicit-approval MCP App and prove it is discoverable from an isolated server.
 - [x] Add regression tests and local installation/testing guidance.
 - [x] Replace the browser-launching bundle-login smoke with a no-browser packaged-wiring test.
+- [x] Expand the no-browser guard across source, scripts, tests, and package test/E2E entrypoints.
 - [x] Re-run authenticated read-only insights when storefront networking is stable.
 - [x] Prove full Gmail sync, a clean Claude Code marketplace install, and an isolated packed-MCPB start without launching a browser.
 - [ ] Visually confirm the MCP App after the user installs the packed v0.3 MCPB in Claude Desktop.
