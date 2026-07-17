@@ -17,7 +17,23 @@ Claude Code stores the browser-created session in its persistent private plugin-
 
 ## Claude Desktop
 
-Build the separate one-click MCP Bundle:
+Download the released installer:
+
+**[Download Ametller Origen v0.2.0 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.2.0/ametller-origen-0.2.0.mcpb)**
+
+[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.2.0)
+
+1. Download the `.mcpb` file from the link above.
+2. Open Claude Desktop on macOS.
+3. Go to **Settings → Extensions → Advanced settings → Install Extension…**.
+4. Select `ametller-origen-0.2.0.mcpb` and approve the installation.
+5. Ask Claude to use Ametller Origen. Chrome opens only when account authorization is needed.
+
+![Ametller Origen cart review and product card in Claude Desktop](docs/claude-desktop-example.png)
+
+This release targets Claude Desktop on macOS. The bundle is self-contained; Chrome is required for browser sign-in. Desktop state is kept in `~/.ametller/session.json` with mode `0600`.
+
+To build the same bundle from source instead:
 
 ```bash
 git clone https://github.com/denya/ametller-origen-skill.git
@@ -25,8 +41,6 @@ cd ametller-origen-skill
 npm ci
 npm run pack:mcpb
 ```
-
-This release targets Claude Desktop on macOS. Open **Settings → Extensions → Advanced settings → Install Extension…** and select `dist/ametller-origen.mcpb`. The bundle is self-contained; Chrome is still required for browser sign-in. Desktop state is kept in `~/.ametller/session.json` with mode `0600`.
 
 ## CLI and offline tickets
 
