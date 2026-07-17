@@ -2,9 +2,9 @@
   "manifest_version": "0.3",
   "name": "ametller-origen",
   "display_name": "Ametller Origen",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Shop and analyze Ametller Origen from Claude — catalog, online and offline history, backtested basket suggestions, and real cart changes without checkout.",
-  "long_description": "Shop and understand your Ametller Origen groceries by talking to Claude. The extension uses Ametller's commerce API to browse the catalog, read complete online purchase history, and add, change, or remove items in your real cart. An optional local Gmail workflow imports offline digital tickets.\n\n**Key Features:**\n• **Search and browse** the catalog with official images, current prices, and availability.\n• **Purchase insights** — frequent products and spend by month/category across online orders and optional offline tickets.\n• **Smart basket suggestions** — an honestly backtested repeat-purchase model ranks likely next products, and a Claude Desktop MCP App lets you select and explicitly approve additions.\n• **Explore separately** — ask for local, seasonal, or unfamiliar products through the live catalog instead of pretending purchase history can predict something never bought.\n• **Fill the real cart** — add items, set quantities, or remove them; every change is reversible.\n\n**You stay in control of payment.** There is no checkout or payment tool, by design — Claude fills the cart and you review and pay on the Ametller Origen site. The browser is used only to establish authorization (including 2FA); it is never driven or scraped for catalog, orders, statistics, tickets, or cart operations. Sessions and synced tickets remain in private local state.\n\nOffline ticket sync additionally requires Python 3 and an authenticated gws CLI. This extension targets Claude Desktop on macOS. It is independent and is not affiliated with, endorsed by, or sponsored by Ametller Origen.",
+  "long_description": "Shop and understand your Ametller Origen groceries by talking to Claude. The extension uses Ametller's commerce API to browse the catalog, read complete online purchase history, and add, change, or remove items in your real cart. Claude's connected Gmail integration is the primary way to import offline digital tickets; an optional local gws workflow supports advanced automation.\n\n**Key Features:**\n• **Search and browse** the catalog with official images, current prices, and availability.\n• **Purchase insights** — frequent products and spend by month/category across online orders and optional offline tickets.\n• **Smart basket suggestions** — an honestly backtested repeat-purchase model ranks likely next products, and a Claude Desktop MCP App lets you select and explicitly approve additions.\n• **Explore separately** — ask for local, seasonal, or unfamiliar products through the live catalog instead of pretending purchase history can predict something never bought.\n• **Fill the real cart** — add items, set quantities, or remove them; every change is reversible.\n\n**You stay in control of payment.** There is no checkout or payment tool, by design — Claude fills the cart and you review and pay on the Ametller Origen site. The browser is used only to establish authorization (including 2FA); it is never driven or scraped for catalog, orders, statistics, tickets, or cart operations. Sessions and synced tickets remain in private local state.\n\nConnected-Gmail ingestion stores only normalized receipt fields and does not modify Gmail. The optional gws fallback requires Python 3 and an authenticated gws CLI. This extension targets Claude Desktop on macOS. It is independent and is not affiliated with, endorsed by, or sponsored by Ametller Origen.",
   "author": {
     "name": "Dany and contributors",
     "url": "https://github.com/denya/ametller-origen-skill"
@@ -61,8 +61,12 @@
       "description": "List the products in a past order without adding anything (defaults to the latest order)."
     },
     {
+      "name": "ametller_ingest_offline_tickets",
+      "description": "Store normalized offline tickets already read through Claude's connected Gmail integration."
+    },
+    {
       "name": "ametller_sync_offline_tickets",
-      "description": "Refresh the private local offline-ticket cache from Ametller digital receipts in Gmail."
+      "description": "Optional gws CLI fallback for refreshing the private offline-ticket cache."
     },
     {
       "name": "ametller_get_offline_tickets",

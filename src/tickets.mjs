@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -26,6 +27,51 @@ function compactTicket(ticket, { includeItems = true } = {}) {
         total: Number(item.totalPrice) || 0,
       })),
     } : {}),
+  };
+}
+
+export async function ingestTickets(ticketDir, tickets, { overwrite = false } = {}) {
+  await fs.mkdir(ticketDir, { recursive: true, mode: 0o700 });
+  await fs.chmod(ticketDir, 0o700);
+  let written = 0;
+  let skippedExisting = 0;
+  let failed = 0;
+  for (const ticket of tickets) {
+    const stored = {
+      id: String(ticket.id),
+      date: ticket.date,
+      store: ticket.store || "Ametller Origen",
+      ...(ticket.invoice_number ? { invoiceNumber: ticket.invoice_number } : {}),
+      totalAmount: Number(ticket.total),
+      items: ticket.items.map((item) => ({
+        name: String(item.name),
+        quantity: Number(item.quantity),
+        unit: item.unit === "kg" ? "kg" : "ud",
+        pricePerUnit: Number(item.unit_price) || 0,
+        totalPrice: Number(item.total) || 0,
+      })),
+      source: "gmail-connector",
+    };
+    const digest = createHash("sha256").update(stored.id).digest("hex").slice(0, 24);
+    const file = path.join(ticketDir, `gmail-${digest}.json`);
+    try {
+      await fs.writeFile(file, `${JSON.stringify(stored, null, 2)}\n`, {
+        encoding: "utf8",
+        mode: 0o600,
+        flag: overwrite ? "w" : "wx",
+      });
+      await fs.chmod(file, 0o600);
+      written += 1;
+    } catch (error) {
+      if (error?.code === "EEXIST") skippedExisting += 1;
+      else failed += 1;
+    }
+  }
+  return {
+    received: tickets.length,
+    written,
+    skipped_existing: skippedExisting,
+    failed,
   };
 }
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0 — 2026-07-17
+
+- Add connector-first offline-ticket ingestion through Claude's existing Gmail integration.
+- Keep the Python/`gws` workflow as an optional local automation fallback.
+
 ## 0.4.0 — 2026-07-17
 
 - Replace cadence-based suggestions with the chronologically backtested 10/30/120-day repeat-purchase ranker.

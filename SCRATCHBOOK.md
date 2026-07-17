@@ -27,6 +27,8 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - Saved-session API checks passed for catalog, full order pagination/details, cart read, and combined online/offline suggestions. The authorized add/set/remove cycle restored the exact original cart fingerprint.
 - Existing gitleaks history/worktree scans and dependency audit passed; no new scanner or dependency was needed.
 - Public v0.4 main/tag and the exact MCPB asset were verified independently after upload; the downloaded checksum matched and the unpacked 15-tool/MCP-App server started without adjacent dependencies.
+- Connected Gmail and the Ametller MCP are sibling tools; the MCP cannot call Gmail directly. A connector-first skill plus a normalized ingestion tool is the smallest portable bridge and stores no raw email body.
+- v0.5's 16-tool bundle passed the full one-command gate, deterministic build, clean marketplace install, isolated MCPB start, dependency audit, and secret scan without opening a browser or reading a live mailbox.
 
 ## Failed or harmful
 
@@ -58,6 +60,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 - Inventory proxies, adaptive decay, family boosts/caps, and feature ensembles did not beat the simpler default robustly. Purchase history does not reveal current pantry stock.
 - An offline suggestion could resolve to an already-carted product only after live catalog lookup. Apply cart-id exclusion again after resolution, not just before ranking.
 - Protein rotation improves family coverage but slightly worsens exact-product metrics. Keep it explicit and never relabel it as the best general predictor.
+- Making the Dennis-specific `gws` process the default imposed Python, CLI installation, and separate Google authentication on normal customers. Keep it only as an optional automation fallback.
 
 ## Open observations
 

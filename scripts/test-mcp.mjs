@@ -27,10 +27,11 @@ const transport = new StdioClientTransport({
     PATH: process.env.PATH,
     NODE_PATH: "",
     AMETLLER_SESSION_PATH: path.join(work, "state", "session.json"),
+    AMETLLER_TICKET_DIR: path.join(work, "tickets"),
   },
   stderr: "inherit",
 });
-const client = new Client({ name: "ametller-contract-smoke", version: "0.4.0" });
+const client = new Client({ name: "ametller-contract-smoke", version: "0.5.0" });
 
 async function call(name, args = {}) {
   const response = await client.callTool({ name, arguments: args });
@@ -59,6 +60,7 @@ try {
     "ametller_get_cart",
     "ametller_get_purchase_history",
     "ametller_get_order_items",
+    "ametller_ingest_offline_tickets",
     "ametller_sync_offline_tickets",
     "ametller_get_offline_tickets",
     "ametller_purchase_insights",
@@ -80,6 +82,23 @@ try {
   const auth = await call("ametller_auth_status");
   assert.equal(JSON.parse(auth.text).signed_in, false);
 
+  const ingested = await call("ametller_ingest_offline_tickets", {
+    tickets: [{
+      id: "synthetic-message-id",
+      date: "2026-07-13",
+      total: 1.99,
+      items: [{ name: "Synthetic product", quantity: 1, unit: "ud", unit_price: 1.99, total: 1.99 }],
+    }],
+  });
+  assert.deepEqual(JSON.parse(ingested.text), {
+    received: 1,
+    written: 1,
+    skipped_existing: 0,
+    failed: 0,
+  });
+  const offline = await call("ametller_get_offline_tickets", { limit: 1 });
+  assert.equal(JSON.parse(offline.text).count, 1);
+
   let liveCatalog = "skipped";
   if (process.env.AMETLLER_LIVE_SMOKE === "1") {
     const search = await callOk("ametller_search_products", { query: "poma", limit: 3 });
@@ -96,7 +115,7 @@ try {
   const insights = await call("ametller_purchase_insights");
   assert.equal(insights.response.isError, true);
   assert.match(insights.text, /sign|login/i);
-  console.log(`mcp_smoke=pass tools=${listed.tools.length} app_resource=pass live_catalog=${liveCatalog} registered_guard=pass`);
+  console.log(`mcp_smoke=pass tools=${listed.tools.length} app_resource=pass gmail_ingest=pass live_catalog=${liveCatalog} registered_guard=pass`);
 } finally {
   await client.close().catch(() => {});
   try { fs.rmSync(work, { recursive: true, force: true }); } catch {}

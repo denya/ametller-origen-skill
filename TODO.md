@@ -32,3 +32,10 @@
 - [x] Re-run deterministic build, full tests, strict plugin/MCPB validation and isolated starts.
 - [x] Re-run dependency, secret/privacy, API-only authenticated read, browser-boundary, and reversible-cart safety gates.
 - [x] Commit, push public main, publish the v0.4 MCPB asset/checksum, and verify the public form.
+
+## Unreleased connected-Gmail ingestion
+
+- [x] Add a private normalized-ticket ingestion tool for Claude's existing Gmail connection.
+- [x] Make connected Gmail the documented default and retain `gws` as an optional fallback.
+- [x] Run the full checkout-free/package/privacy gate for v0.5.
+- [ ] Publish and verify the v0.5 plugin/MCPB for normal customers.

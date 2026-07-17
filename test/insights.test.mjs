@@ -10,7 +10,7 @@ import {
   offlineEvents,
   onlineEvents,
 } from "../src/analytics.mjs";
-import { readTickets, syncTickets } from "../src/tickets.mjs";
+import { ingestTickets, readTickets, syncTickets } from "../src/tickets.mjs";
 import { compactProduct } from "../src/ametller/api.mjs";
 
 test("product details expose official images and safe availability without fake stock counts", () => {
@@ -77,6 +77,49 @@ test("ticket sync wrapper returns only a sanitized summary", async () => {
     assert.deepEqual(await syncTickets({ scriptPath: script, ticketDir: directory }), {
       matched_messages: 3,
       written: 2,
+      skipped_existing: 1,
+      failed: 0,
+    });
+  } finally {
+    await fs.rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("connected Gmail ingestion writes only normalized private ticket data", async () => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "ametller-ingest-"));
+  const ticket = {
+    id: "synthetic-message-id",
+    date: "2026-07-13",
+    store: "Ametller Origen",
+    invoice_number: "2026/1/1",
+    total: 1.99,
+    items: [{
+      name: "Quefir natural AO 4x125g",
+      quantity: 1,
+      unit: "ud",
+      unit_price: 1.99,
+      total: 1.99,
+    }],
+  };
+  try {
+    assert.deepEqual(await ingestTickets(directory, [ticket]), {
+      received: 1,
+      written: 1,
+      skipped_existing: 0,
+      failed: 0,
+    });
+    assert.equal((await fs.stat(directory)).mode & 0o777, 0o700);
+    const [name] = await fs.readdir(directory);
+    const file = path.join(directory, name);
+    const stored = JSON.parse(await fs.readFile(file, "utf8"));
+    assert.equal((await fs.stat(file)).mode & 0o777, 0o600);
+    assert.equal(stored.source, "gmail-connector");
+    assert.equal(stored.items[0].name, ticket.items[0].name);
+    assert.equal("body" in stored, false);
+    assert.equal((await readTickets(directory)).tickets.length, 1);
+    assert.deepEqual(await ingestTickets(directory, [{ ...ticket, date: "2026-07-14" }]), {
+      received: 1,
+      written: 0,
       skipped_existing: 1,
       failed: 0,
     });

@@ -2,7 +2,7 @@
 
 Open Claude integration for Ametller Origen's live catalog, online orders, real cart, optional offline Gmail tickets, purchase analytics, and smart basket suggestions. It intentionally has no checkout, payment, delivery-slot, or order-placement tool. Chrome is used only to establish authorization; all catalog, order, analytics, and cart operations use APIs and never drive or scrape the shopping website.
 
-Version 0.4 replaces the old cadence heuristic with an honestly backtested repeat-purchase model. The Claude Desktop MCP App combines full online history with optional private offline Gmail tickets, shows spending and frequency charts, resolves suggestions against the current catalog, and keeps every product unselected until the user explicitly approves a real-cart change.
+Version 0.5 makes Claude's existing Gmail connection the primary offline-ticket path. It keeps the v0.4 backtested repeat-purchase model and explicit cart approval, while retaining the local `gws` workflow only as an optional automation fallback.
 
 ## Install in Claude Code
 
@@ -17,18 +17,20 @@ Start or reload Claude Code, then ask for Ametller Origen or invoke `/ametller-o
 
 Claude Code stores the browser-created session in its persistent private plugin-data directory, not in the versioned plugin cache. Uninstall with `--keep-data` if you want to preserve that authorization.
 
+For offline shop tickets, connect Gmail in Claude's **Connectors** settings. The integration uses that normal Gmail connection first; no separate Google CLI is needed.
+
 ## Install in Claude Desktop
 
-Download the v0.4.0 installer:
+Download the v0.5.0 installer:
 
-**[Download Ametller Origen v0.4.0 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.4.0/ametller-origen-0.4.0.mcpb)**
+**[Download Ametller Origen v0.5.0 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.5.0/ametller-origen-0.5.0.mcpb)**
 
-[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.4.0)
+[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.5.0)
 
 1. Download the `.mcpb` file from the link above.
 2. Open Claude Desktop on macOS.
 3. Go to **Settings → Extensions → Advanced settings → Install Extension…**.
-4. Select `ametller-origen-0.4.0.mcpb` and approve the installation.
+4. Select `ametller-origen-0.5.0.mcpb` and approve the installation.
 5. Ask Claude to use Ametller Origen. Chrome opens only when account authorization is needed.
 
 ![Ametller Origen cart review and product card in Claude Desktop](docs/claude-desktop-example.png)
@@ -88,9 +90,9 @@ For Claude Desktop, build the one-click local extension:
 npm run pack:mcpb
 ```
 
-Install `dist/ametller-origen-0.4.0.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and the offline-ticket parser. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
+Install `dist/ametller-origen-0.5.0.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and offline-ticket ingestion. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
 
-## CLI and offline tickets
+## Offline tickets and CLI
 
 For local development or direct use:
 
@@ -106,14 +108,20 @@ npm run cli -- suggestions 12
 npm run cli -- suggestions 12 protein-rotation
 ```
 
-Offline store tickets are separate from SCAPI online orders. With the authenticated `gws` Google Workspace CLI on `PATH`:
+Offline store tickets are separate from SCAPI online orders. The recommended customer workflow uses Claude's connected Gmail integration:
+
+> “Refresh my Ametller offline tickets from Gmail and update my purchase insights.”
+
+Claude searches the exact digital-ticket subject, reads the messages through Gmail, and sends only normalized receipt fields to `ametller_ingest_offline_tickets`. Raw email bodies are not stored, and Gmail messages are not modified. See [Anthropic's Gmail integration documentation](https://claude.com/docs/connectors/google/gmail) for connection and privacy behavior.
+
+As a second option, advanced local users can use Python 3 plus an authenticated [`gws`](https://github.com/googleworkspace/cli) on `PATH`:
 
 ```bash
 npm run tickets:sync -- --overwrite
 npm run cli -- tickets 50
 ```
 
-Tickets default to `~/.ametller/tickets` with private directory/file modes. Claude can call `ametller_sync_offline_tickets` and `ametller_get_offline_tickets` directly. The sync requires Python 3 plus an authenticated [`gws`](https://github.com/googleworkspace/cli) on `PATH`; offline tickets are not part of Ametller's commerce API.
+Tickets default to `~/.ametller/tickets` with private directory/file modes. `ametller_get_offline_tickets` reads tickets ingested by either method. The `gws` sync remains optional and offline tickets are not part of Ametller's commerce API.
 
 ## Capabilities and boundaries
 

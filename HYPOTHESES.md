@@ -16,3 +16,4 @@
 | H12 | Proven by normalization tests | Placeholder/service-line removal, exact-receipt deduplication, and same-day basket merging can be reproduced in the runtime event pipeline without the research database. |
 | H13 | Confirmed limitation | Repeat history cannot score genuinely unseen products; novelty must remain an explicitly separate live-catalog exploration lane. |
 | H14 | Proven only as an alternate objective | Protein rotation improves protein-family recall but slightly worsens exact-product Precision/NDCG, so it must never replace the default silently. |
+| H15 | Proven by isolated MCP test | A skill-orchestrated bridge can use Claude's existing Gmail connection and persist only normalized receipt fields; the Ametller MCP does not need Gmail credentials or a second OAuth flow. |
