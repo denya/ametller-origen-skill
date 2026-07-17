@@ -101,7 +101,7 @@ When the user lists several items, search + add them one at a time, then summari
 When finished, tell them the cart is ready to review and pay on the Ametller Origen site. \
 To sign in or re-authenticate, call the ametller_login tool — it opens a browser for the user to sign in.`;
 
-const server = new McpServer({ name: "ametller", version: "0.5.0" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "ametller", version: "0.5.1" }, { instructions: INSTRUCTIONS });
 
 // Librarian tool: serves the bundled shopping skill on demand (no auth needed).
 server.registerTool(

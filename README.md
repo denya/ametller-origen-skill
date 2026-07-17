@@ -10,7 +10,7 @@ Requires current [Claude Code](https://code.claude.com/docs/en/setup), Node.js 2
 
 ```bash
 claude plugin marketplace add denya/ametller-origen-skill
-claude plugin install ametller-origen@dany-grocery
+claude plugin install ametller-origen@denya-grocery
 ```
 
 Start or reload Claude Code, then ask for Ametller Origen or invoke `/ametller-origen:ametller-origen`. The MCP server starts automatically. On the first account action Claude opens the official Ametller login in Chrome; enter credentials and 2FA only in that browser. After the login response is captured, Chrome closes and normal operations use the direct API.
@@ -21,16 +21,16 @@ For offline shop tickets, connect Gmail in Claude's **Connectors** settings. The
 
 ## Install in Claude Desktop
 
-Download the v0.5.0 installer:
+Download the v0.5.1 installer:
 
-**[Download Ametller Origen v0.5.0 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.5.0/ametller-origen-0.5.0.mcpb)**
+**[Download Ametller Origen v0.5.1 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.5.1/ametller-origen-0.5.1.mcpb)**
 
-[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.5.0)
+[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.5.1)
 
 1. Download the `.mcpb` file from the link above.
 2. Open Claude Desktop on macOS.
 3. Go to **Settings → Extensions → Advanced settings → Install Extension…**.
-4. Select `ametller-origen-0.5.0.mcpb` and approve the installation.
+4. Select `ametller-origen-0.5.1.mcpb` and approve the installation.
 5. Ask Claude to use Ametller Origen. Chrome opens only when account authorization is needed.
 
 ![Ametller Origen cart review and product card in Claude Desktop](docs/claude-desktop-example.png)
@@ -90,7 +90,7 @@ For Claude Desktop, build the one-click local extension:
 npm run pack:mcpb
 ```
 
-Install `dist/ametller-origen-0.5.0.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and offline-ticket ingestion. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
+Install `dist/ametller-origen-0.5.1.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and offline-ticket ingestion. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
 
 ## Offline tickets and CLI
 
@@ -149,6 +149,6 @@ The committed `dist/server.mjs` is deterministic and lets Claude Code install wi
 
 Live single-product cart restoration is release-tested. The multi-line **reorder** tool remains available, but its live mutation is not release-tested because unavailable historical products or promotion-generated bonus lines cannot be proven losslessly restorable in advance. Review the past order first and prefer adding its items individually when exact reversibility matters.
 
-The public maintainer display name is **Dany** and the GitHub account is **denya**.
+Maintained by [Denis Moskalets](https://github.com/denya). The main contact is [X/Twitter @denyamsk](https://x.com/denyamsk); you can also reach Denis on [Telegram @denyamsk](https://t.me/denyamsk).
 
 MIT licensed. Based on Igor Safonov's MIT-licensed [Ametller Origen MCP extension](https://github.com/igorsafonov-gif/ametller-origen). Independent project; not affiliated with, endorsed by, or sponsored by Ametller Origen.

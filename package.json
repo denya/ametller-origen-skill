@@ -1,10 +1,13 @@
 {
   "name": "ametller-origen-skill",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Ametller Origen skill, MCP, purchase analytics, and backtested basket suggestions without checkout.",
   "type": "module",
   "license": "MIT",
-  "author": "Dany and contributors",
+  "author": {
+    "name": "Denis Moskalets",
+    "url": "https://github.com/denya"
+  },
   "homepage": "https://github.com/denya/ametller-origen-skill",
   "repository": {
     "type": "git",
@@ -41,7 +44,7 @@
     "e2e:readonly": "node scripts/e2e-readonly.mjs",
     "validate:plugin": "claude plugin validate . --strict",
     "validate:mcpb": "npx --yes @anthropic-ai/mcpb@2.1.2 validate manifest.json",
-    "pack:mcpb": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . dist/ametller-origen-0.5.0.mcpb",
+    "pack:mcpb": "npm run build && npx --yes @anthropic-ai/mcpb@2.1.2 pack . dist/ametller-origen-0.5.1.mcpb",
     "icon": "python3 scripts/make-icon.py"
   },
   "engines": {

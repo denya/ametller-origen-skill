@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
-  "name": "dany-grocery",
-  "description": "Open grocery integrations maintained by Dany.",
+  "name": "denya-grocery",
+  "description": "Open grocery integrations maintained by Denis Moskalets.",
   "owner": {
-    "name": "Dany"
+    "name": "Denis Moskalets"
   },
   "plugins": [
     {

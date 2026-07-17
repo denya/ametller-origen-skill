@@ -2,10 +2,10 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "ametller-origen",
   "displayName": "Ametller Origen",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Search Ametller Origen, analyze online and offline purchases, and prepare a backtested smart basket without checkout.",
   "author": {
-    "name": "Dany and contributors",
+    "name": "Denis Moskalets",
     "url": "https://github.com/denya"
   },
   "homepage": "https://github.com/denya/ametller-origen-skill",

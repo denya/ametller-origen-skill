@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 — 2026-07-17
+
+- Correct the public maintainer attribution to Denis Moskalets and add GitHub, X/Twitter, and Telegram contact links.
+
 ## 0.5.0 — 2026-07-17
 
 - Add connector-first offline-ticket ingestion through Claude's existing Gmail integration.

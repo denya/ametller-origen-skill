@@ -31,7 +31,7 @@ const transport = new StdioClientTransport({
   },
   stderr: "inherit",
 });
-const client = new Client({ name: "ametller-contract-smoke", version: "0.5.0" });
+const client = new Client({ name: "ametller-contract-smoke", version: "0.5.1" });
 
 async function call(name, args = {}) {
   const response = await client.callTool({ name, arguments: args });
