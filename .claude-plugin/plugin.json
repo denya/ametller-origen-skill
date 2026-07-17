@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "ametller-origen",
+  "displayName": "Ametller Origen",
+  "version": "0.2.0",
+  "description": "Search Ametller Origen, inspect purchase history, and prepare the real cart without checkout.",
+  "author": {
+    "name": "Dany and contributors",
+    "url": "https://github.com/denya"
+  },
+  "homepage": "https://github.com/denya/ametller-origen-skill",
+  "repository": "https://github.com/denya/ametller-origen-skill",
+  "license": "MIT",
+  "keywords": ["ametller-origen", "grocery", "shopping", "mcp", "cart"]
+}

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "dany-grocery",
+  "description": "Open grocery integrations maintained by Dany.",
+  "owner": {
+    "name": "Dany"
+  },
+  "plugins": [
+    {
+      "name": "ametller-origen",
+      "source": "./",
+      "description": "Search Ametller Origen, inspect purchase history, and prepare a real cart without checkout."
+    }
+  ]
+}

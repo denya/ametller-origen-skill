@@ -13,6 +13,7 @@ This repository includes a modular Salesforce Commerce API client, MCP server, C
 - Never checkout, pay, select delivery, or enter payment information.
 - Never ask the user to paste a password, one-time code, access token, or refresh token into chat.
 - Never print, upload, or commit `~/.ametller/session.json` or synced receipts.
+- Use the browser only to establish or renew authorization. Catalog, orders, statistics, tickets, and every basket read/write must use the API client or Gmail API workflow, never browser UI automation or scraping.
 - Match products by name, brand, size, and price. A matching price alone is not enough.
 - If the exact product is absent online, say so. Do not silently substitute another format or brand.
 
@@ -36,6 +37,7 @@ npm run cli -- add 10022 1
 npm run cli -- set 10022 2
 npm run cli -- remove 10022
 npm run cli -- orders
+npm run cli -- orders all
 npm run cli -- order
 npm run tickets:sync -- --overwrite
 ```

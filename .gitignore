@@ -10,8 +10,9 @@ tickets/
 __pycache__/
 *.local
 
-# build output (run `npm run build`)
-dist/
+# deterministic bundled runtime is committed for buildless plugin installs
+dist/*
+!dist/server.mjs
 
 # packaged distributions
 *.mcpb

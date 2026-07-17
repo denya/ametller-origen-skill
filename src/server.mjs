@@ -46,7 +46,7 @@ function tool(handler) {
     } catch (e) {
       if (e instanceof AuthError) return fail(e.message);
       if (e?.code === "ENOENT") return fail("Not signed in yet. Run the `ametller_login` tool first.");
-      return fail(`Error: ${e.message}`);
+      return fail("Ametller request failed. Retry once; if it persists, run the login tool again.");
     }
   };
 }
@@ -85,7 +85,7 @@ When the user lists several items, search + add them one at a time, then summari
 When finished, tell them the cart is ready to review and pay on the Ametller Origen site. \
 To sign in or re-authenticate, call the ametller_login tool — it opens a browser for the user to sign in.`;
 
-const server = new McpServer({ name: "ametller", version: "0.1.0" }, { instructions: INSTRUCTIONS });
+const server = new McpServer({ name: "ametller", version: "0.2.0" }, { instructions: INSTRUCTIONS });
 
 // Librarian tool: serves the bundled shopping skill on demand (no auth needed).
 server.registerTool(
@@ -106,7 +106,7 @@ server.registerTool(
     description: "Check whether the Ametller Origen session is valid.",
     inputSchema: {},
   },
-  tool(async (_args, c) => json(c.authStatus())),
+  tool(async (_args, c) => json(await c.authStatus())),
 );
 
 server.registerTool(
@@ -119,17 +119,21 @@ server.registerTool(
   },
   async () => {
     try {
-      const r = await runLogin(SESSION_PATH);
+      await runLogin(SESSION_PATH);
       return {
         content: [
           { type: "text", text: `Signed in to Ametller Origen — session saved. You can shop now.` },
         ],
       };
-    } catch (e) {
-      const msg = /Cannot find (package|module) '?playwright/.test(e.message)
-        ? "the browser component (Playwright) isn't available to this server yet."
-        : e.message;
-      return { content: [{ type: "text", text: `Login failed: ${msg}` }], isError: true };
+    } catch (error) {
+      const known = new Set([
+        "Browser authorization component is unavailable.",
+        "Could not open Google Chrome. Make sure it is installed and retry.",
+        "No Ametller login detected in time — run login again and sign in.",
+        "Browser authorization did not complete. Retry the login.",
+      ]);
+      const message = known.has(error?.message) ? error.message : "Browser authorization failed. Retry the login.";
+      return { content: [{ type: "text", text: `Login failed: ${message}` }], isError: true };
     }
   },
 );
@@ -175,12 +179,16 @@ server.registerTool(
   "ametller_get_purchase_history",
   {
     title: "Purchase history",
-    description: "List past orders (date, total, status, item count). Page is 1-based.",
-    inputSchema: { page: z.number().int().min(1).optional().describe("Default 1") },
+    description: "List past online orders (date, total, status, item count), by page or as the full bounded history.",
+    inputSchema: {
+      page: z.number().int().min(1).optional().describe("Page is 1-based; default 1"),
+      all: z.boolean().optional().describe("Fetch every page, up to the safety limit"),
+    },
   },
-  tool(async ({ page }, c) => {
-    const data = await c.getOrders(page ?? 1);
-    return json({ page: page ?? 1, orders: (data.data || []).map(compactOrder) });
+  tool(async ({ page, all }, c) => {
+    const data = all ? await c.getAllOrders() : await c.getOrders(page ?? 1);
+    const orders = (data.data || []).map(compactOrder);
+    return json({ ...(all ? { pages: data.pages } : { page: page ?? 1 }), total: data.total, orders });
   }),
 );
 

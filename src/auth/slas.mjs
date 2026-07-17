@@ -47,7 +47,7 @@ export async function getGuestToken() {
   const params = new URL(location).searchParams;
   const code = params.get("code");
   const usid = params.get("usid");
-  if (!code) throw new Error(`SLAS authorize returned no code: ${location}`);
+  if (!code) throw new Error("SLAS authorize returned no authorization code.");
 
   const body = new URLSearchParams({
     grant_type: "authorization_code_pkce",
@@ -63,7 +63,7 @@ export async function getGuestToken() {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  if (!tokRes.ok) throw new Error(`SLAS token exchange -> ${tokRes.status}: ${(await tokRes.text()).slice(0, 200)}`);
+  if (!tokRes.ok) throw new Error(`SLAS token exchange failed (${tokRes.status}).`);
   return tokRes.json();
 }
 
@@ -82,6 +82,6 @@ export async function refreshToken(refresh_token) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body,
   });
-  if (!res.ok) throw new Error(`SLAS refresh -> ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok) throw new Error(`SLAS refresh failed (${res.status}).`);
   return res.json();
 }

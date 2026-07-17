@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "ametller-origen": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/server.mjs"],
+      "env": {
+        "AMETLLER_SESSION_PATH": "${CLAUDE_PLUGIN_DATA}/session.json",
+        "AMETLLER_TICKET_DIR": "${CLAUDE_PLUGIN_DATA}/tickets",
+        "AMETLLER_BROWSER_CHANNEL": "chrome"
+      }
+    }
+  }
+}

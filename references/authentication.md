@@ -26,6 +26,8 @@ The login script:
 
 It does not inspect cookies, local storage, passwords, or one-time codes.
 
+The browser boundary ends after token capture. Never use browser UI automation to read products, orders, totals, tickets, or the basket, and never mutate the basket in the browser. All normal operations use SCAPI or the Gmail API workflow.
+
 ## Existing authorized browser tab
 
 If the agent's browser-control environment explicitly supports developer network events, it may reload an already-authorized Ametller tab and capture the same exact OAuth token response. Never read cookies or local storage, and never emit token values in tool output. Save the registered pair directly to the session file with `0600` permissions.

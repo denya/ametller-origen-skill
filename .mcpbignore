@@ -1,0 +1,14 @@
+node_modules/
+.git/
+.gitleaksignore
+.claude-plugin/
+.mcp.json
+src/
+scripts/
+test/
+references/
+TODO.md
+HYPOTHESES.md
+SCRATCHBOOK.md
+package-lock.json
+*.mcpb

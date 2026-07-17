@@ -2,14 +2,17 @@
   "manifest_version": "0.3",
   "name": "ametller-origen",
   "display_name": "Ametller Origen",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shop at Ametller Origen from Claude — search the catalog, fill and review the real cart, reorder past shops, and show products as photo grids. You sign in in a browser and pay on the Ametller Origen site.",
-  "long_description": "Shop your Ametller Origen online groceries by talking to Claude. The extension drives your own authenticated Ametller Origen session: it browses the catalog, reads your purchase history, and adds, changes, or removes items in your real cart so you and Claude can fill it together.\n\n**Key Features:**\n• **Search and browse** the catalog (Catalan works best), with prices in euros.\n• **Fill the real cart** — add items, set quantities, or remove them; every change is reversible.\n• **Reorder a past shop** in one step with \"buy again.\"\n• **Photo grids** — products are shown as an HTML artifact with photo, name, price, and link.\n\n**You stay in control of payment.** There is no checkout or payment tool, by design — Claude fills the cart and you review and pay on the Ametller Origen site, where Strong Customer Authentication happens. Sign in once through a browser window (handling any 2FA); the session is stored locally on your machine and never leaves it.\n\nThis extension targets Claude Desktop. It is an independent project and is not affiliated with, endorsed by, or sponsored by Ametller Origen.",
+  "long_description": "Shop your Ametller Origen online groceries by talking to Claude. The extension uses Ametller's commerce API to browse the catalog, read your purchase history, and add, change, or remove items in your real cart so you and Claude can fill it together.\n\n**Key Features:**\n• **Search and browse** the catalog (Catalan works best), with prices in euros.\n• **Fill the real cart** — add items, set quantities, or remove them; every change is reversible.\n• **Reorder a past shop** in one step with \"buy again.\"\n• **Photo grids** — products are shown as an HTML artifact with photo, name, price, and link.\n\n**You stay in control of payment.** There is no checkout or payment tool, by design — Claude fills the cart and you review and pay on the Ametller Origen site, where Strong Customer Authentication happens. The browser is used only to establish authorization (including 2FA); it is never driven or scraped for catalog, order, statistics, or cart operations. The session is stored locally on your machine and never leaves it.\n\nThis extension targets Claude Desktop. It is an independent project and is not affiliated with, endorsed by, or sponsored by Ametller Origen.",
   "author": {
-    "name": "Igor Safonov",
-    "url": "https://github.com/igorsafonov-gif"
+    "name": "Dany and contributors",
+    "url": "https://github.com/denya/ametller-origen-skill"
   },
   "license": "MIT",
+  "privacy_policies": [
+    "https://corp.ametllerorigen.com/es/politica-de-privacidad/"
+  ],
   "icon": "icon.png",
   "keywords": [
     "ametller",

@@ -3,9 +3,8 @@
 // token straight from the /oauth2/token network response — which carries the access
 // token, refresh token, and customer id in one shot — then persist it to disk.
 //
-// Uses playwright-core (no bundled browser) driving the user's installed Chrome via
-// the "chrome" channel, so the plugin stays small. Imported dynamically and kept
-// EXTERNAL from the server bundle.
+// Uses playwright-core (no bundled browser) to drive the user's installed Chrome
+// through the "chrome" channel. It is imported dynamically and bundled for install.
 import { decodeJwt, tokenStatus } from "./slas.mjs";
 import { saveSession } from "./store.mjs";
 
@@ -23,13 +22,18 @@ function isRegistered(accessToken) {
 }
 
 export async function runLogin(sessionPath, { timeoutMs = 5 * 60_000 } = {}) {
-  const { chromium } = await import("playwright-core");
+  let chromium;
+  try {
+    ({ chromium } = await import("playwright-core"));
+  } catch {
+    throw new Error("Browser authorization component is unavailable.");
+  }
   const channel = process.env.AMETLLER_BROWSER_CHANNEL || "chrome";
   let browser;
   try {
     browser = await chromium.launch({ headless: false, channel });
-  } catch (e) {
-    throw new Error(`Couldn't open ${channel} — make sure Google Chrome is installed. (${e.message.split("\n")[0]})`);
+  } catch {
+    throw new Error("Could not open Google Chrome. Make sure it is installed and retry.");
   }
   try {
     const context = await browser.newContext();
@@ -59,7 +63,10 @@ export async function runLogin(sessionPath, { timeoutMs = 5 * 60_000 } = {}) {
     if (!captured) throw new Error("No Ametller login detected in time — run login again and sign in.");
     saveSession(sessionPath, captured);
     return { customerId: captured.customer_id, daysLeft: tokenStatus(captured.access_token).daysLeft };
+  } catch (error) {
+    if (/No Ametller login detected in time/.test(error?.message)) throw error;
+    throw new Error("Browser authorization did not complete. Retry the login.");
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
   }
 }

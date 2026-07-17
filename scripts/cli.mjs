@@ -24,7 +24,7 @@ let result;
 
 switch (command) {
   case "status":
-    result = fs.existsSync(sessionPath) ? registeredClient().authStatus() : { signed_in: false };
+    result = fs.existsSync(sessionPath) ? await registeredClient().authStatus() : { signed_in: false };
     break;
   case "search": {
     const query = args.join(" ").trim();
@@ -41,6 +41,11 @@ switch (command) {
     result = compactCart(await registeredClient().getCart());
     break;
   case "orders": {
+    if (args[0] === "all") {
+      const data = await registeredClient().getAllOrders();
+      result = { total: data.total, pages: data.pages, orders: data.data.map(compactOrder) };
+      break;
+    }
     const page = Number(args[0] || 1);
     if (!Number.isInteger(page) || page < 1) throw new Error("Page must be a positive integer");
     result = (await registeredClient().getOrders(page)).data?.map(compactOrder) || [];

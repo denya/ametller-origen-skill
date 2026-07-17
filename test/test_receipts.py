@@ -1,4 +1,7 @@
 import importlib.util
+import json
+import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -27,6 +30,13 @@ TOTAL 1,99 €"""
         self.assertEqual(receipt["date"], "2026-07-13")
         self.assertEqual(receipt["items"][0]["name"], "Quefir natural AO 4x125g")
         self.assertEqual(receipt["totalAmount"], 1.99)
+
+    def test_ticket_json_is_private(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ticket.json"
+            MODULE.write_private_json(path, {"id": "synthetic"})
+            self.assertEqual(json.loads(path.read_text()), {"id": "synthetic"})
+            self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)
 
 
 if __name__ == "__main__":

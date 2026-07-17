@@ -1,6 +1,7 @@
-// Dev smoke test: drive the built server through the real MCP protocol (the same
-// stdio JSON-RPC Claude Desktop uses), against the real signed-in session.
-// Does a reversible cart write round-trip (add -> read -> remove) on the real basket.
+// Privacy-safe MCP contract smoke. It runs the committed bundle from an isolated
+// directory with no session and never touches or prints a real account/cart.
+import assert from "node:assert/strict";
+import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,40 +9,84 @@ import { dirname } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
-const SESSION = process.env.AMETLLER_SESSION_PATH || path.join(os.homedir(), ".ametller", "session.json");
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const work = fs.mkdtempSync(path.join(os.tmpdir(), "ametller-mcp-smoke-"));
+const dist = path.join(work, "dist");
+fs.mkdirSync(dist);
+const serverPath = path.join(dist, "server.mjs");
+const serverSource = process.env.AMETLLER_SERVER_PATH || path.join(root, "dist", "server.mjs");
+const artifactRoot = process.env.AMETLLER_SERVER_PATH ? dirname(dirname(serverSource)) : root;
+fs.copyFileSync(serverSource, serverPath);
+fs.copyFileSync(path.join(artifactRoot, "package.json"), path.join(work, "package.json"));
+fs.copyFileSync(path.join(artifactRoot, "browsers.json"), path.join(work, "browsers.json"));
 
 const transport = new StdioClientTransport({
   command: process.execPath,
-  args: [`${ROOT}/dist/server.mjs`],
-  env: { PATH: process.env.PATH, AMETLLER_SESSION_PATH: SESSION },
+  args: [serverPath],
+  env: {
+    PATH: process.env.PATH,
+    NODE_PATH: "",
+    AMETLLER_SESSION_PATH: path.join(work, "state", "session.json"),
+  },
   stderr: "inherit",
 });
-
-const client = new Client({ name: "test-harness", version: "0" });
-await client.connect(transport);
-
-const { tools } = await client.listTools();
-console.log("TOOLS:", tools.map((t) => t.name).join(", "));
+const client = new Client({ name: "ametller-contract-smoke", version: "0.2.0" });
 
 async function call(name, args = {}) {
-  const r = await client.callTool({ name, arguments: args });
-  const text = r.content?.[0]?.text ?? "";
-  const trimmed = text.length > 700 ? text.slice(0, 700) + "\n  …(trimmed)" : text;
-  console.log(`\n# ${name}(${JSON.stringify(args)})${r.isError ? "  [isError]" : ""}\n${trimmed}`);
-  return text;
+  const response = await client.callTool({ name, arguments: args });
+  return { response, text: response.content?.[0]?.text || "" };
 }
 
-await call("auth_status");
-const search = await call("search_products", { query: "llet", limit: 3 });
-const pid = JSON.parse(search).results?.[0]?.id;
-await call("get_product", { product_id: pid });
-await call("get_cart");
-await call("add_to_cart", { product_id: pid, quantity: 1 });
-await call("get_cart");
-await call("remove_from_cart", { product_id: pid }); // clean up — leave the real cart as we found it
-await call("get_cart");
-await call("get_purchase_history", { page: 1 });
+async function callOk(name, args = {}) {
+  let result;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    result = await call(name, args);
+    if (!result.response.isError) return result;
+    if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+  }
+  throw new Error(`${name} failed after retries: ${result.text}`);
+}
 
-await client.close();
-console.log("\n✓ MCP round-trip complete (real cart left clean)");
+try {
+  await client.connect(transport);
+  const listed = await client.listTools();
+  const names = new Set(listed.tools.map((tool) => tool.name));
+  for (const required of [
+    "ametller_auth_status",
+    "ametller_login",
+    "ametller_search_products",
+    "ametller_get_product",
+    "ametller_get_cart",
+    "ametller_get_purchase_history",
+    "ametller_get_order_items",
+    "ametller_add_to_cart",
+    "ametller_set_quantity",
+    "ametller_remove_from_cart",
+    "ametller_reorder_order",
+  ]) assert.ok(names.has(required), `missing MCP tool: ${required}`);
+
+  const auth = await call("ametller_auth_status");
+  assert.equal(JSON.parse(auth.text).signed_in, false);
+
+  let liveCatalog = "skipped";
+  if (process.env.AMETLLER_LIVE_SMOKE === "1") {
+    const search = await callOk("ametller_search_products", { query: "poma", limit: 3 });
+    const results = JSON.parse(search.text).results;
+    assert.ok(results.length > 0);
+    const product = await callOk("ametller_get_product", { product_id: String(results[0].id) });
+    assert.ok(JSON.parse(product.text).id);
+    liveCatalog = "pass";
+  }
+
+  const cart = await call("ametller_get_cart");
+  assert.equal(cart.response.isError, true);
+  assert.match(cart.text, /sign|login/i);
+  console.log(`mcp_smoke=pass tools=${listed.tools.length} live_catalog=${liveCatalog} registered_guard=pass`);
+} finally {
+  await client.close().catch(() => {});
+  try { fs.unlinkSync(serverPath); } catch {}
+  try { fs.unlinkSync(path.join(work, "package.json")); } catch {}
+  try { fs.unlinkSync(path.join(work, "browsers.json")); } catch {}
+  try { fs.rmdirSync(dist); } catch {}
+  try { fs.rmdirSync(work); } catch {}
+}

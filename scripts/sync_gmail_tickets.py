@@ -11,6 +11,7 @@ import os
 import re
 import shutil
 import subprocess
+from collections import Counter
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
@@ -98,6 +99,23 @@ def decode_message_body(message: dict[str, Any]) -> str:
     encoded = candidates[0]["body"]["data"]
     raw = base64.urlsafe_b64decode(encoded + "=" * (-len(encoded) % 4))
     return raw.decode("utf-8", errors="replace")
+
+
+def hydrate_attachment_bodies(message: dict[str, Any]) -> None:
+    message_id = message.get("id")
+    if not message_id:
+        return
+    for part in iter_parts(message.get("payload") or {}):
+        body = part.get("body") or {}
+        attachment_id = body.get("attachmentId")
+        if body.get("data") or not attachment_id:
+            continue
+        attachment = run_gws(
+            ["gmail", "users", "messages", "attachments", "get"],
+            {"userId": "me", "messageId": message_id, "id": attachment_id},
+        )
+        if attachment.get("data"):
+            body["data"] = attachment["data"]
 
 
 def receipt_text(message_body: str) -> str:
@@ -202,6 +220,14 @@ def ticket_path(ticket: dict[str, Any], tickets_dir: Path) -> Path:
     return tickets_dir / f"{ticket['date']}-{discriminator}.json"
 
 
+def write_private_json(path: Path, value: dict[str, Any]) -> None:
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+        json.dump(value, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    os.chmod(path, 0o600)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--query", default=DEFAULT_QUERY)
@@ -210,28 +236,30 @@ def main() -> int:
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args()
 
-    args.tickets_dir.mkdir(parents=True, exist_ok=True)
+    args.tickets_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
+    os.chmod(args.tickets_dir, 0o700)
     message_ids = list_message_ids(args.query)
     if args.limit:
         message_ids = message_ids[: args.limit]
 
     written = skipped = 0
-    failures: list[dict[str, str]] = []
+    failures: list[str] = []
     for message_id in message_ids:
         try:
             message = run_gws(
                 ["gmail", "users", "messages", "get"],
                 {"userId": "me", "id": message_id, "format": "full"},
             )
+            hydrate_attachment_bodies(message)
             ticket = parse_message(message)
             path = ticket_path(ticket, args.tickets_dir)
             if path.exists() and not args.overwrite:
                 skipped += 1
                 continue
-            path.write_text(json.dumps(ticket, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            write_private_json(path, ticket)
             written += 1
         except Exception as error:  # Continue syncing the remaining receipts.
-            failures.append({"message_id": message_id, "error": str(error)})
+            failures.append(type(error).__name__)
 
     print(
         json.dumps(
@@ -240,7 +268,8 @@ def main() -> int:
                 "matched_messages": len(message_ids),
                 "written": written,
                 "skipped_existing": skipped,
-                "failed": failures,
+                "failed": len(failures),
+                "failure_types": dict(Counter(failures)),
             },
             ensure_ascii=False,
             indent=2,

@@ -29,6 +29,7 @@ Receipt files can contain purchase history and store locations. Keep them local;
 
 ```bash
 npm run cli -- orders
+npm run cli -- orders all       # full bounded history
 npm run cli -- order             # latest
 npm run cli -- order ORDER_NUMBER
 ```

@@ -1,0 +1,2 @@
+# Generated third-party bundle: verify by deterministic hash and secret scan, not text diff.
+dist/server.mjs -diff
