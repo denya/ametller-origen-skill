@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2 — 2026-07-17
+
+- Add compact offline-ticket frequency and category-leader summaries, avoiding large raw-receipt tool results.
+
 ## 0.5.1 — 2026-07-17
 
 - Correct the public maintainer attribution to Denis Moskalets and add GitHub, X/Twitter, and Telegram contact links.

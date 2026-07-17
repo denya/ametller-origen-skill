@@ -1,5 +1,11 @@
 # Release workload
 
+## Offline-ticket timeout follow-up
+
+- [x] Correlate the Claude Desktop timeout with local MCP lifecycle logs and benchmark the private ticket cache.
+- [x] Add a compact server-side offline summary for frequent-product/category questions instead of returning hundreds of raw receipts.
+- [ ] Package and publish the verified follow-up.
+
 - [x] Inspect the public repo, installed extension, and Glovo install baseline without modifying live state.
 - [x] Package as a current Claude Code plugin and self-hosted marketplace entry.
 - [x] Package the same server as a separate Claude Desktop `.mcpb` bundle.

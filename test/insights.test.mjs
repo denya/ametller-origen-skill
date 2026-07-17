@@ -7,11 +7,19 @@ import {
   buildInsights,
   chooseCatalogMatch,
   enrichSuggestions,
+  inferOfflineCategory,
   offlineEvents,
   onlineEvents,
 } from "../src/analytics.mjs";
 import { ingestTickets, readTickets, syncTickets } from "../src/tickets.mjs";
 import { compactProduct } from "../src/ametller/api.mjs";
+
+test("offline category heuristics cover common receipt-only names", () => {
+  assert.equal(inferOfflineCategory("Móres extra -safata 125g"), "Fruita i verdura");
+  assert.equal(inferOfflineCategory("Skyr natural 450g"), "Lactis i ous");
+  assert.equal(inferOfflineCategory("Corona de gambes salsa còctel"), "Peix");
+  assert.equal(inferOfflineCategory("Suc premsat de raïm"), "Begudes");
+});
 
 test("product details expose official images and safe availability without fake stock counts", () => {
   const product = compactProduct({
@@ -186,6 +194,10 @@ test("insights merge online and offline purchases and exclude cart products", ()
   assert.equal(insights.suggestions[0].product_id, undefined);
   assert.equal(insights.suggestions[0].expected_price, 5);
   assert.equal(insights.categories.some((category) => category.heuristic), true);
+  assert.deepEqual(insights.category_leaders.map((item) => item.name).sort(), [
+    "Poma Gala",
+    "Quefir natural 4x125g",
+  ]);
   assert.equal(insights.prediction.model, "multi-scale-recency-30");
   assert.equal(insights.prediction.purchase_days, 4);
 });

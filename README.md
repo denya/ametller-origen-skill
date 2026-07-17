@@ -21,16 +21,16 @@ For offline shop tickets, connect Gmail in Claude's **Connectors** settings. The
 
 ## Install in Claude Desktop
 
-Download the v0.5.1 installer:
+Download the v0.5.2 installer:
 
-**[Download Ametller Origen v0.5.1 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.5.1/ametller-origen-0.5.1.mcpb)**
+**[Download Ametller Origen v0.5.2 for Claude Desktop (.mcpb)](https://github.com/denya/ametller-origen-skill/releases/download/v0.5.2/ametller-origen-0.5.2.mcpb)**
 
-[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.5.1)
+[Release notes and checksum](https://github.com/denya/ametller-origen-skill/releases/tag/v0.5.2)
 
 1. Download the `.mcpb` file from the link above.
 2. Open Claude Desktop on macOS.
 3. Go to **Settings → Extensions → Advanced settings → Install Extension…**.
-4. Select `ametller-origen-0.5.1.mcpb` and approve the installation.
+4. Select `ametller-origen-0.5.2.mcpb` and approve the installation.
 5. Ask Claude to use Ametller Origen. Chrome opens only when account authorization is needed.
 
 ![Ametller Origen cart review and product card in Claude Desktop](docs/claude-desktop-example.png)
@@ -90,7 +90,7 @@ For Claude Desktop, build the one-click local extension:
 npm run pack:mcpb
 ```
 
-Install `dist/ametller-origen-0.5.1.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and offline-ticket ingestion. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
+Install `dist/ametller-origen-0.5.2.mcpb` through **Settings → Extensions → Advanced settings → Install Extension…**. This bundle contains the interactive analytics view and offline-ticket ingestion. Anthropic MCP Apps support is required for the interactive view; other MCP clients still receive the structured text result.
 
 ## Offline tickets and CLI
 

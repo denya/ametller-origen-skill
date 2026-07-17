@@ -39,14 +39,14 @@ export function isProductLine(name) {
 export function inferOfflineCategory(name) {
   const value = normalizeProductName(name);
   const groups = [
-    ["Fruita i verdura", /\b(poma|pera|platan|taronja|mandarina|maduixa|fruita|tomac|tomaquet|patata|ceba|carbasso|alvocat|ruca|amanida|enciam|espinac|verdura)\b/],
-    ["Lactis i ous", /\b(llet|quefir|kefir|iogurt|yogur|formatge|queso|nata|mantega|ou|ous)\b/],
-    ["Carn i xarcuteria", /\b(pollastre|vedella|porc|pernil|salsitxa|botifarra|xori|fuet|salami|colbasa|carn|duroc)\b/],
-    ["Peix", /\b(peix|salmo|tonyina|bacalla|gamba|lluc|sardina)\b/],
-    ["Forn", /\b(pa|baguette|croissant|brioche|galeta|coca|pastis)\b/],
     ["Begudes", /\b(aigua|suc|cervesa|vi|cava|refresc|kombutxa|te)\b/],
+    ["Fruita i verdura", /\b(poma|pera|platan|taronja|mandarina|maduixa|fruita|tomac|tomaquet|patata|ceba|carbasso|alvocat|ruca|amanida|enciam|espinac|verdura|mor\w*|gerd\w*|nabiu\w*|cirer\w*|cogombre\w*|kiwi|pebrot\w*|esparrec\w*|sindria|raim|carxof\w*)\b/],
+    ["Lactis i ous", /\b(llet|quefir|kefir|iogurt|yogur|formatge|queso|nata|mantega|ou|ous|skyr|mozzarella|burrata|stracciatella|parmigiano|parmesa\w*|actimel|auvergne)\b/],
+    ["Carn i xarcuteria", /\b(pollastre|vedella|porc|pernil|salsitxa|botifarra|xori|fuet|salami|colbasa|carn|duroc|gall|indi|indiot|baco|bacon)\b/],
+    ["Peix", /\b(peix|salmo\w*|tonyin\w*|bacall\w*|gamb\w*|lluc\w*|sardin\w*|anguila\w*)\b/],
+    ["Forn", /\b(pa|baguette|croissant|brioche|galeta|coca|pastis)\b/],
     ["Rebost", /\b(arros|pasta|oli|vinagre|farina|cereal|llegum|salsa|conserva|xocolata|sucre|sal)\b/],
-    ["Preparats", /\b(pizza|sopa|crema|hummus|truita|croqueta|pate|foie|preparat)\b/],
+    ["Preparats", /\b(pizza|sopa|crema|hummus|truita|croqueta|pate|foie|preparat|sushi|dragon)\b/],
   ];
   return groups.find(([, pattern]) => pattern.test(value))?.[0] || "Altres";
 }
@@ -337,8 +337,8 @@ export function buildInsights(events, {
     .map((item) => ({ ...item, share: lineSpend ? money((item.spend / lineSpend) * 100) : 0 }))
     .sort((a, b) => b.spend - a.spend);
   const products = [...productMap.values()];
-  const topProducts = products
-    .map((group) => ({
+  const byRegularity = (a, b) => b.purchase_count - a.purchase_count || b.quantity - a.quantity || b.spend - a.spend;
+  const productStats = products.map((group) => ({
       key: group.key,
       product_id: group.product_id,
       name: group.name,
@@ -349,9 +349,14 @@ export function buildInsights(events, {
       spend: money(group.spend),
       last_bought: [...group.dates].sort().at(-1),
       sources: [...group.sources].sort(),
-    }))
-    .sort((a, b) => b.purchase_count - a.purchase_count || b.quantity - a.quantity)
+    }));
+  const topProducts = [...productStats]
+    .sort(byRegularity)
     .slice(0, limit);
+  const categoryLeaders = categories.map(({ category, heuristic }) => ({
+    ...productStats.filter((product) => product.category === category).sort(byRegularity)[0],
+    heuristic,
+  }));
 
   const targetDate = day(now.toISOString());
   const recency = recencyScores(productMap, targetDate);
@@ -391,6 +396,7 @@ export function buildInsights(events, {
       .map(([month, spend]) => ({ month, spend }))
       .sort((a, b) => a.month.localeCompare(b.month)),
     categories,
+    category_leaders: categoryLeaders,
     top_products: topProducts,
     suggestions,
     prediction: {

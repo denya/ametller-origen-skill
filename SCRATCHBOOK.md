@@ -4,6 +4,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 
 ## Worked
 
+- The private cache has 240 small ticket files and reads all of them in about 65 ms locally; server-side aggregation is the useful optimization, not parallel file reads.
 - Public worktree started clean; the installed extension was inspected read-only and its local session-persistence improvements already exist in this repo.
 - Current official packaging separates Claude Code plugins from Claude Desktop MCP Bundles.
 - Existing Git credentials can fetch and dry-run push this repository even though the separate GitHub CLI token is stale.
@@ -33,6 +34,7 @@ Keep entries short and free of tokens, customer data, order contents, receipt co
 
 ## Failed or harmful
 
+- A Claude Desktop request asked for 200 raw tickets to answer an aggregate category question, creating a roughly 336 KB tool result while extension install/reload events recycled the local bridge. The local reader was not slow; avoid large raw results and never install or reload an extension during an active call.
 - Treating the old root `manifest.json` as a Claude Code plugin manifest would be wrong; it is an MCPB manifest and must remain a separate distribution path.
 - The installed extension has local uncommitted changes. Editing or resetting it would risk the working authenticated environment, so release work stays in this repo.
 - A buildless Claude Code install is not viable here: source imports npm packages and marketplace installation does not run `npm install`. Commit a self-contained bundle instead.

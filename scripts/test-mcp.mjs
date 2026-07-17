@@ -31,7 +31,7 @@ const transport = new StdioClientTransport({
   },
   stderr: "inherit",
 });
-const client = new Client({ name: "ametller-contract-smoke", version: "0.5.1" });
+const client = new Client({ name: "ametller-contract-smoke", version: "0.5.2" });
 
 async function call(name, args = {}) {
   const response = await client.callTool({ name, arguments: args });
@@ -98,6 +98,10 @@ try {
   });
   const offline = await call("ametller_get_offline_tickets", { limit: 1 });
   assert.equal(JSON.parse(offline.text).count, 1);
+  const offlineSummary = JSON.parse((await call("ametller_get_offline_tickets", { summary: true })).text);
+  assert.equal(offlineSummary.ticket_count, 1);
+  assert.equal(offlineSummary.category_leaders[0].name, "Synthetic product");
+  assert.equal("tickets" in offlineSummary, false);
 
   let liveCatalog = "skipped";
   if (process.env.AMETLLER_LIVE_SMOKE === "1") {
