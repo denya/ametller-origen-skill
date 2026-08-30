@@ -1,6 +1,6 @@
 # Ametller Origen skill and MCP
 
-Open Claude integration for Ametller Origen's live catalog, online orders, real cart, optional offline Gmail tickets, purchase analytics, and smart basket suggestions. It intentionally has no checkout, payment, delivery-slot, or order-placement tool. Chrome is used only to establish authorization; all catalog, order, analytics, and cart operations use APIs and never drive or scrape the shopping website.
+Open Claude integration for Ametller Origen's live catalog, online orders, real cart, optional offline Gmail tickets, purchase analytics, and smart basket suggestions. It intentionally has no checkout, payment, delivery-slot, or order-placement tool. The direct MCP/CLI integration uses Chrome only to establish authorization and uses APIs for normal operations. ChatGPT Work Mode can instead use its persistent authenticated cloud browser as a bounded website fallback when the local MCP is unavailable.
 
 Version 0.5.3 makes raw receipt inspection safely paginated and turns buy-again into a preview-and-approve workflow. It keeps Claude's existing Gmail connection as the primary offline-ticket path and retains local `gws` only as an optional automation fallback.
 
@@ -18,6 +18,21 @@ Start or reload Claude Code, then ask for Ametller Origen or invoke `/ametller-o
 Claude Code stores the browser-created session in its persistent private plugin-data directory, not in the versioned plugin cache. Uninstall with `--keep-data` if you want to preserve that authorization.
 
 For offline shop tickets, connect Gmail in Claude's **Connectors** settings. The integration uses that normal Gmail connection first; no separate Google CLI is needed.
+
+## Use in ChatGPT Work Mode
+
+ChatGPT Work Mode can use Ametller Origen without importing the local MCP session:
+
+1. Open the official Ametller Origen website in the Work Mode cloud browser.
+2. If signed out, start the browser's protected authorization flow. Enter credentials and any verification code only in that interface, never in chat.
+3. After sign-in, confirm the account page in a fresh tab. The private browser profile retains the website session and the site handles its own session refresh.
+4. Use the rendered website as a fallback for catalog, profile, online-order-history, and basket reads. A basket UI change is allowed only after the user explicitly approves the exact product and quantity.
+
+The browser session is intentionally opaque to the model: passwords, verification codes, cookies, access tokens, and refresh tokens must not be read, printed, copied, or exported. In particular, the Work Mode session does **not** authorize this repository's MCP and must not be converted into `~/.ametller/session.json`. If the website session expires, run the protected browser authorization flow again.
+
+Ametller Origen currently exposes no page WebMCP tools, so Work Mode uses ordinary rendered-page browser interaction for this fallback. It must stop before checkout, payment, delivery address or slot selection, order placement, or any other purchase side effect. Prefer the direct MCP when it is installed: it is more structured, supports analytics, and keeps the existing preview-and-approve cart workflow.
+
+Offline shop tickets are not part of the website order history. In Work Mode, use connected Gmail and search the exact subject `"Ametller Origen - El teu tiquet digital"`; read only the receipt data needed for the request and do not change the messages. Browser authorization and Gmail authorization are separate.
 
 ## Install in Claude Desktop
 
@@ -127,7 +142,7 @@ Tickets default to `~/.ametller/tickets` with private directory/file modes. `ame
 
 - Search products and return official links, all image variants, prices, units, and safe availability flags.
 - Read complete paginated online order history and individual order lines.
-- Sync and read offline digital tickets from Gmail without browser scraping.
+- Sync and read offline digital tickets from connected Gmail without browser scraping.
 - Group purchases, show monthly/category spend, and rank frequent products.
 - Clean placeholders/service lines, remove exact duplicate receipts, merge same-day receipts for prediction, and rank repeat products with the validated 10/30/120-day recency model.
 - Exclude the current API cart and resolve exact product/pack/price against the live catalog by id or a conservative name+price match.
@@ -135,7 +150,7 @@ Tickets default to `~/.ametller/tickets` with private directory/file modes. `ame
 
 See [the predictor research](docs/NEXT-BASKET-RESEARCH.md) for the chronological evaluation and [the reusable shop-integration harness](docs/SHOP-INTEGRATION-HARNESS.md) for the release workflow.
 
-Current limitations: offline category grouping is a transparent name-based estimate; receipt discounts are not allocated across categories; uncertain ticket-to-catalog matches are shown but cannot be selected; repeat prediction cannot score unseen products; a reorder apply refuses absent or complex baskets that cannot be losslessly restored. Category browsing, search refinements, dedicated promotions, wishlists, and coupons are good future API candidates. Shipping, delivery, payment, and order placement are intentionally out of scope.
+Current limitations: Ametller pages expose no WebMCP tools, and a ChatGPT Work browser session cannot authorize the local MCP; offline category grouping is a transparent name-based estimate; receipt discounts are not allocated across categories; uncertain ticket-to-catalog matches are shown but cannot be selected; repeat prediction cannot score unseen products; a reorder apply refuses absent or complex baskets that cannot be losslessly restored. Category browsing, search refinements, dedicated promotions, wishlists, and coupons are good future API candidates. Shipping, delivery, payment, and order placement are intentionally out of scope in every execution mode.
 
 ## Verify a checkout-free build
 
